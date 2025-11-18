@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<device-admin>
+    <uses-policies>
+        <!-- Policy to disable the keyguard -->
+        <disable-keyguard />
+        <!-- Policy to hide the status bar in Lock Task Mode -->
+        <hide-status-bar />
+        <!-- Policy to control system UI features -->
+        <set-lock-task-features />
+    </uses-policies>
+</device-admin>

@@ -1,0 +1,56 @@
+{
+  "android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME": "com.autoplus.kiosklauncher/.DeviceAdminReceiver",
+  "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION": "https://your-server.com/kiosk.apk",
+  "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_CHECKSUM": "INSERT_SHA256_HASH_HERE",
+  "android.app.extra.PROVISIONING_WIFI_SSID": "AutoPlus_Warehouse",
+  "android.app.extra.PROVISIONING_WIFI_PASSWORD": "your_wifi_password",
+  "android.app.extra.PROVISIONING_WIFI_SECURITY_TYPE": "WPA",
+  "android.app.extra.PROVISIONING_LOCALE": "bg_BG",
+  "android.app.extra.PROVISIONING_TIME_ZONE": "Europe/Sofia",
+  "android.app.extra.PROVISIONING_SKIP_ENCRYPTION": false,
+  "android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED": true,
+  "android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE": {
+    "warehouse_id": "WH_SOFIA_01",
+    "server_url": "https://api.autoplus.bg",
+    "printer_ip": "192.168.1.100"
+  }
+}
+
+<!-- ИНСТРУКЦИИ ЗА ГЕНЕРИРАНЕ НА QR КОД:
+
+1. Заменете placeholder стойностите с реални данни
+2. Генерирайте SHA-256 hash на APK файла:
+   
+   Windows PowerShell:
+   Get-FileHash -Path "kiosk.apk" -Algorithm SHA256
+   
+   Linux/Mac:
+   shasum -a 256 kiosk.apk
+
+3. Използвайте онлайн QR генератор или:
+   - Python: pip install qrcode[pil]
+   - Node.js: npm install qrcode
+   
+4. Генерирайте QR код от този JSON
+
+Python пример:
+```python
+import qrcode
+import json
+
+with open('provisioning.json', 'r') as f:
+    data = json.load(f)
+
+qr = qrcode.QRCode(version=10, box_size=10, border=5)
+qr.add_data(json.dumps(data))
+qr.make(fit=True)
+
+img = qr.make_image(fill_color="black", back_color="white")
+img.save("provisioning_qr.png")
+```
+
+5. Разпечатайте QR кода
+6. При factory reset на устройството, на welcome screen:
+   - Tap 6 пъти на екрана
+   - Сканирайте QR кода с камерата
+-->
