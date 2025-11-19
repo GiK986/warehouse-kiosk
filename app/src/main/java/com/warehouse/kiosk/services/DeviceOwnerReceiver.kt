@@ -1,19 +1,100 @@
 package com.warehouse.kiosk.services
 
 import android.app.admin.DeviceAdminReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
+import android.util.Log
+import com.warehouse.kiosk.ProvisioningCompleteActivity
 
+/**
+ * Device Admin Receiver за Device Owner режим
+ *
+ * Този receiver получава callbacks от Android за:
+ * - Device Admin статус промени
+ * - Device Owner provisioning completion
+ * - Device Owner промени
+ * - Boot complete
+ */
 class DeviceOwnerReceiver : DeviceAdminReceiver() {
+
+    companion object {
+        private const val TAG = "DeviceOwnerReceiver"
+    }
+
+    /**
+     * Изпълнява се когато приложението е зададено като Device Admin
+     */
     override fun onEnabled(context: Context, intent: Intent) {
         super.onEnabled(context, intent)
-        // Called when the app is set as a device app_selection
+        Log.i(TAG, "Device Admin enabled")
     }
 
+    /**
+     * Изпълнява се когато приложението е премахнато като Device Admin
+     */
     override fun onDisabled(context: Context, intent: Intent) {
         super.onDisabled(context, intent)
-        // Called when the app is removed as a device app_selection
+        Log.i(TAG, "Device Admin disabled")
     }
 
+    /**
+     * КРИТИЧНО: Изпълнява се след успешен Device Owner provisioning
+     *
+     * Android изпраща този Intent след като:
+     * 1. APK е download-нат и инсталиран
+     * 2. Device Owner е setнат успешно
+     * 3. Provisioning е завършен
+     *
+     * Тук стартираме ProvisioningCompleteActivity за допълнителен setup
+     */
+    override fun onProfileProvisioningComplete(context: Context, intent: Intent) {
+        super.onProfileProvisioningComplete(context, intent)
 
+        Log.i(TAG, "====================================")
+        Log.i(TAG, "Profile provisioning complete!")
+        Log.i(TAG, "====================================")
+
+        // Извличане на provisioning extras (ако има)
+        val extras = intent.extras
+        if (extras != null && !extras.isEmpty) {
+            Log.d(TAG, "Provisioning extras: ${extras.keySet()}")
+        }
+
+        // Стартиране на ProvisioningCompleteActivity
+        try {
+            val setupIntent = Intent(context, ProvisioningCompleteActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                // Прехвърляне на extras към activity
+                if (extras != null) {
+                    putExtras(extras)
+                }
+            }
+
+            context.startActivity(setupIntent)
+            Log.i(TAG, "ProvisioningCompleteActivity started")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start ProvisioningCompleteActivity", e)
+        }
+    }
+
+    /**
+     * Изпълнява се след boot на устройството
+     * (само ако сме Device Owner)
+     */
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED -> {
+                Log.i(TAG, "Device booted - Device Owner active")
+                // Можем да стартираме MainActivity автоматично при boot
+            }
+            "android.app.action.DEVICE_OWNER_CHANGED" -> {
+                Log.i(TAG, "Device Owner status changed")
+            }
+        }
+    }
 }

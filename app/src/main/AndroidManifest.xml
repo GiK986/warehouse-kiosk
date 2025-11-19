@@ -46,16 +46,16 @@
             </intent-filter>
         </activity>
 
-<!--        &lt;!&ndash; PROVISIONING COMPLETE ACTIVITY (препоръчано) &ndash;&gt;-->
-<!--        <activity-->
-<!--            android:name=".ProvisioningCompleteActivity"-->
-<!--            android:exported="true"-->
-<!--            android:permission="android.permission.BIND_DEVICE_ADMIN">-->
-<!--            <intent-filter>-->
-<!--                <action android:name="android.app.action.ADMIN_POLICY_COMPLIANCE" />-->
-<!--                <category android:name="android.intent.category.DEFAULT" />-->
-<!--            </intent-filter>-->
-<!--        </activity>-->
+        <!-- PROVISIONING COMPLETE ACTIVITY (за Android 10+) -->
+        <activity
+            android:name=".ProvisioningCompleteActivity"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <intent-filter>
+                <action android:name="android.app.action.ADMIN_POLICY_COMPLIANCE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <!-- BroadcastReceiver за следене на рестарт -->
         <receiver android:name=".services.BootReceiver" android:exported="true">
@@ -76,6 +76,9 @@
                 android:resource="@xml/device_owner_receiver" />
             <intent-filter>
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.PROFILE_PROVISIONING_COMPLETE" />
+                <action android:name="android.app.action.BOOT_COMPLETED" />
+                <action android:name="android.app.action.DEVICE_OWNER_CHANGED" />
             </intent-filter>
         </receiver>
 

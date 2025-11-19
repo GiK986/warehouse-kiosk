@@ -6,7 +6,7 @@ set -e
 PROJECT_DIR="./"
 PACKAGE_NAME="com.warehouse.kiosk"
 RECEIVER_CLASS=".services.DeviceOwnerReceiver"
-APK_URL="https://github.com/GiK986/warehouse-kiosk/releases/download/v1.0.0/warehouse-kiosk-release.apk"
+APK_URL="https://github.com/GiK986/warehouse-kiosk/releases/download/v1.0.1/warehouse-kiosk-release.apk"
 WIFI_SSID="GiKHome"
 WIFI_PASSWORD="qwer@1234"
 
