@@ -16,6 +16,7 @@ class KioskPreferences @Inject constructor(private val dataStore: DataStore<Pref
     // Define keys
     private object PrefKeys {
         val KIOSK_MODE_ACTIVE = booleanPreferencesKey("kiosk_mode_active")
+        val INITIAL_SETUP_COMPLETED = booleanPreferencesKey("initial_setup_completed")
         val PASSWORD_HASH = stringPreferencesKey("password_hash")
         val AUTO_START_APP_PACKAGE = stringPreferencesKey("auto_start_app_package")
     }
@@ -28,6 +29,17 @@ class KioskPreferences @Inject constructor(private val dataStore: DataStore<Pref
     suspend fun setKioskModeActive(isActive: Boolean) {
         dataStore.edit {
             it[PrefKeys.KIOSK_MODE_ACTIVE] = isActive
+        }
+    }
+
+    // Initial Setup Status
+    val isInitialSetupCompleted: Flow<Boolean> = dataStore.data.map {
+        it[PrefKeys.INITIAL_SETUP_COMPLETED] ?: false
+    }
+
+    suspend fun setInitialSetupCompleted(completed: Boolean) {
+        dataStore.edit {
+            it[PrefKeys.INITIAL_SETUP_COMPLETED] = completed
         }
     }
 

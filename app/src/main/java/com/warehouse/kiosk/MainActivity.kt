@@ -63,37 +63,59 @@ class MainActivity : ComponentActivity() {
 
         if (deviceOwnerStatus) {
             // Check if we should set up kiosk policies
-            // Only set policies if:
-            // 1. Coming from provisioning (first time setup), OR
-            // 2. Kiosk mode is already active (re-entering after app restart)
+            // Set policies if ANY of these conditions is true:
+            // 1. Coming from provisioning (QR code setup), OR
+            // 2. Kiosk mode is active (normal restart), OR
+            // 3. First time as Device Owner (ADB setup)
             val fromProvisioning = intent.getBooleanExtra("from_provisioning", false)
 
             lifecycleScope.launch {
                 val kioskModeActive = repository.isKioskModeActive.first()
-                Log.i("MainActivity", "From provisioning: $fromProvisioning")
-                Log.i("MainActivity", "Kiosk mode active in repository: $kioskModeActive")
+                val setupCompleted = repository.isInitialSetupCompleted.first()
 
-                if (fromProvisioning || kioskModeActive) {
-                    Log.i("MainActivity", "We ARE Device Owner - setting up kiosk policies")
+                Log.i("MainActivity", "Setup check:")
+                Log.i("MainActivity", "  - From provisioning: $fromProvisioning")
+                Log.i("MainActivity", "  - Kiosk mode active: $kioskModeActive")
+                Log.i("MainActivity", "  - Initial setup completed: $setupCompleted")
+
+                // Determine if we should run setup
+                val isFirstTimeSetup = !setupCompleted  // Never set up before (ADB or QR)
+                val shouldRunSetup = fromProvisioning || kioskModeActive || isFirstTimeSetup
+
+                if (shouldRunSetup) {
+                    Log.i("MainActivity", "✓ Running kiosk setup")
+
+                    if (isFirstTimeSetup) {
+                        Log.i("MainActivity", "  Reason: First time Device Owner setup (ADB or QR)")
+                    } else if (fromProvisioning) {
+                        Log.i("MainActivity", "  Reason: Coming from provisioning")
+                    } else if (kioskModeActive) {
+                        Log.i("MainActivity", "  Reason: Kiosk mode is active (normal restart)")
+                    }
 
                     // Set policies on main thread
                     withContext(Dispatchers.Main) {
                         setKioskPolicies()
                     }
 
+                    // Mark setup as completed (if first time)
+                    if (!setupCompleted) {
+                        Log.i("MainActivity", "  Marking initial setup as completed")
+                        repository.setInitialSetupCompleted(true)
+                    }
+
                     // Ensure kiosk mode is marked as active
                     if (!kioskModeActive) {
-                        Log.i("MainActivity", "First time setup - activating kiosk mode")
+                        Log.i("MainActivity", "  Activating kiosk mode")
                         repository.setKioskModeActive(true)
                     }
 
                     // Start observing kiosk mode changes
                     observeKioskMode()
                 } else {
-                    Log.i("MainActivity", "Skipping kiosk setup:")
-                    Log.i("MainActivity", "  - Not from provisioning")
-                    Log.i("MainActivity", "  - Kiosk mode not active in repository")
-                    Log.i("MainActivity", "  - This is expected after Exit Kiosk Mode")
+                    Log.i("MainActivity", "✗ Skipping kiosk setup")
+                    Log.i("MainActivity", "  Reason: Setup completed AND kiosk mode not active")
+                    Log.i("MainActivity", "  This happens after 'Exit Kiosk Mode'")
                 }
             }
         } else {
@@ -245,21 +267,29 @@ class MainActivity : ComponentActivity() {
                 Log.e("MainActivity", "✗ Failed to restore launcher", e)
             }
 
-            // Update state FIRST (before finish)
+            // Update state FIRST (before starting home)
             repository.setKioskModeActive(false)
             Log.i("MainActivity", "✓ Kiosk mode deactivated in repository")
 
             Log.i("MainActivity", "====================================")
             Log.i("MainActivity", "Kiosk Mode Exit Complete!")
             Log.i("MainActivity", "====================================")
-            Log.i("MainActivity", "Finishing MainActivity - system will show previous launcher")
 
-            // Just finish - don't start home
-            // This prevents MainActivity from restarting and re-setting policies
+            // Start system home launcher
+            // This will start MainActivity again (since it's a HOME launcher)
+            // BUT onCreate() will see:
+            //   - setupCompleted = true
+            //   - kioskModeActive = false
+            //   - from_provisioning = false
+            // So it will SKIP kiosk setup!
+            Log.i("MainActivity", "Starting system HOME launcher...")
+            startHome()
+
+            // Close current MainActivity instance
             finish()
 
-            // Android will automatically show the previous launcher after we finish
-            // Lock Task Features are already reset to 0, so HOME and OVERVIEW will be available
+            // Lock Task Features are reset to 0, so HOME and OVERVIEW buttons work
+            // Next MainActivity start will skip setup (see onCreate logic)
         }
     }
 

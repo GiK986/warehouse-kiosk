@@ -29,6 +29,10 @@ class KioskRepository @Inject constructor(
 
     suspend fun setKioskModeActive(isActive: Boolean) = preferences.setKioskModeActive(isActive)
 
+    val isInitialSetupCompleted: Flow<Boolean> = preferences.isInitialSetupCompleted
+
+    suspend fun setInitialSetupCompleted(completed: Boolean) = preferences.setInitialSetupCompleted(completed)
+
     val passwordHash: Flow<String?> = preferences.passwordHash
 
     suspend fun setPasswordHash(hash: String) = preferences.setPasswordHash(hash)
