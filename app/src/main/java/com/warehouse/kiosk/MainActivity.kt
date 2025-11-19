@@ -217,6 +217,14 @@ class MainActivity : ComponentActivity() {
             Log.i("MainActivity", "Exiting Kiosk Mode...")
             Log.i("MainActivity", "====================================")
 
+            // КРИТИЧНО: Деактивираме kiosk mode ПЪРВО!
+            // Android ще рестартира MainActivity автоматично след някои от следващите операции
+            // Затова ТРЯБВА да е false ПРЕДИ това да се случи!
+            Log.d("MainActivity", "Deactivating kiosk mode in repository FIRST...")
+            repository.setKioskModeActive(false)
+            Log.i("MainActivity", "✓ Kiosk mode deactivated in repository")
+            Log.i("MainActivity", "  (This MUST happen before any system operations)")
+
             val dpm = getSystemService(DevicePolicyManager::class.java)
             val adminComponent = ComponentName(this@MainActivity, DeviceOwnerReceiver::class.java)
 
@@ -231,16 +239,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // Clear lock task packages
-            try {
-                Log.d("MainActivity", "Clearing lock task packages...")
-                dpm.setLockTaskPackages(adminComponent, emptyArray())
-                Log.i("MainActivity", "✓ Lock task packages cleared")
-            } catch (e: Exception) {
-                Log.e("MainActivity", "✗ Failed to clear lock task packages", e)
-            }
-
             // КРИТИЧНО: Reset Lock Task Features (enable всички бутони)
+            // ПРЕДИ setLockTaskPackages защото то може да trigger restart
             try {
                 Log.d("MainActivity", "Resetting Lock Task Features to NONE...")
                 val beforeFeatures = dpm.getLockTaskFeatures(adminComponent)
@@ -257,6 +257,7 @@ class MainActivity : ComponentActivity() {
             }
 
             // Set a system launcher as the default
+            // ПРЕДИ setLockTaskPackages защото то може да trigger restart
             try {
                 Log.d("MainActivity", "Restoring system launcher...")
                 val launchers = queryAllLaunchers()
@@ -267,29 +268,35 @@ class MainActivity : ComponentActivity() {
                 Log.e("MainActivity", "✗ Failed to restore launcher", e)
             }
 
-            // Update state FIRST (before starting home)
-            repository.setKioskModeActive(false)
-            Log.i("MainActivity", "✓ Kiosk mode deactivated in repository")
+            // Clear lock task packages
+            // ВНИМАНИЕ: Това може да trigger автоматичен restart на HOME launcher!
+            try {
+                Log.d("MainActivity", "Clearing lock task packages...")
+                Log.d("MainActivity", "  (May trigger automatic MainActivity restart)")
+                dpm.setLockTaskPackages(adminComponent, emptyArray())
+                Log.i("MainActivity", "✓ Lock task packages cleared")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "✗ Failed to clear lock task packages", e)
+            }
 
             Log.i("MainActivity", "====================================")
             Log.i("MainActivity", "Kiosk Mode Exit Complete!")
             Log.i("MainActivity", "====================================")
 
             // Start system home launcher
-            // This will start MainActivity again (since it's a HOME launcher)
-            // BUT onCreate() will see:
-            //   - setupCompleted = true
-            //   - kioskModeActive = false
-            //   - from_provisioning = false
-            // So it will SKIP kiosk setup!
+            // MainActivity може вече да е стартиран от системата (след setLockTaskPackages)
+            // Но извикваме startHome() за сигурност и затваряме текущата instance
             Log.i("MainActivity", "Starting system HOME launcher...")
             startHome()
 
             // Close current MainActivity instance
             finish()
 
-            // Lock Task Features are reset to 0, so HOME and OVERVIEW buttons work
-            // Next MainActivity start will skip setup (see onCreate logic)
+            // Ако MainActivity се рестартира сега или по-рано, onCreate() ще види:
+            //   - setupCompleted = true
+            //   - kioskModeActive = false  ← Вече е false!
+            //   - from_provisioning = false
+            // И ще ПРОПУСНЕ kiosk setup!
         }
     }
 
