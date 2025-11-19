@@ -47,7 +47,7 @@ class DeviceOwnerReceiver : DeviceAdminReceiver() {
      * 2. Device Owner е setнат успешно
      * 3. Provisioning е завършен
      *
-     * Тук стартираме ProvisioningCompleteActivity за допълнителен setup
+     * ТЕСТОВА ВЕРСИЯ: Само logging, без activity start
      */
     override fun onProfileProvisioningComplete(context: Context, intent: Intent) {
         super.onProfileProvisioningComplete(context, intent)
@@ -62,22 +62,34 @@ class DeviceOwnerReceiver : DeviceAdminReceiver() {
             Log.d(TAG, "Provisioning extras: ${extras.keySet()}")
         }
 
-        // Стартиране на ProvisioningCompleteActivity
+        // Проверка на Device Owner статус
         try {
-            val setupIntent = Intent(context, ProvisioningCompleteActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                // Прехвърляне на extras към activity
-                if (extras != null) {
-                    putExtras(extras)
+            val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE)
+                as android.app.admin.DevicePolicyManager
+            val isDeviceOwner = dpm.isDeviceOwnerApp(context.packageName)
+
+            Log.i(TAG, "Device Owner status: $isDeviceOwner")
+
+            if (isDeviceOwner) {
+                Log.i(TAG, "SUCCESS! We are Device Owner!")
+
+                // Запазване на provisioning статус
+                val prefs = context.getSharedPreferences("kiosk_config", Context.MODE_PRIVATE)
+                prefs.edit().apply {
+                    putBoolean("is_provisioned", true)
+                    putLong("provisioned_at", System.currentTimeMillis())
+                    apply()
                 }
+                Log.i(TAG, "Provisioning status saved")
+            } else {
+                Log.e(TAG, "ERROR: Not Device Owner after provisioning!")
             }
 
-            context.startActivity(setupIntent)
-            Log.i(TAG, "ProvisioningCompleteActivity started")
-
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start ProvisioningCompleteActivity", e)
+            Log.e(TAG, "Error checking Device Owner status", e)
         }
+
+        Log.i(TAG, "onProfileProvisioningComplete finished")
     }
 
     /**

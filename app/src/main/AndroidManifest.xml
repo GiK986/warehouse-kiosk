@@ -46,7 +46,9 @@
             </intent-filter>
         </activity>
 
-        <!-- PROVISIONING COMPLETE ACTIVITY (за Android 10+) -->
+        <!-- PROVISIONING COMPLETE ACTIVITY - ВРЕМЕННО ИЗКЛЮЧЕНА ЗА ТЕСТ -->
+        <!-- Тестваме дали Device Owner се setва без тази activity -->
+        <!--
         <activity
             android:name=".ProvisioningCompleteActivity"
             android:exported="true"
@@ -56,6 +58,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        -->
 
         <!-- BroadcastReceiver за следене на рестарт -->
         <receiver android:name=".services.BootReceiver" android:exported="true">
