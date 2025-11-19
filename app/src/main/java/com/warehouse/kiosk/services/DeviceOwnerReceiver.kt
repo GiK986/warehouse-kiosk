@@ -47,7 +47,7 @@ class DeviceOwnerReceiver : DeviceAdminReceiver() {
      * 2. Device Owner е setнат успешно
      * 3. Provisioning е завършен
      *
-     * ТЕСТОВА ВЕРСИЯ: Само logging, без activity start
+     * Стартира ProvisioningCompleteActivity за допълнителна настройка
      */
     override fun onProfileProvisioningComplete(context: Context, intent: Intent) {
         super.onProfileProvisioningComplete(context, intent)
@@ -73,20 +73,26 @@ class DeviceOwnerReceiver : DeviceAdminReceiver() {
             if (isDeviceOwner) {
                 Log.i(TAG, "SUCCESS! We are Device Owner!")
 
-                // Запазване на provisioning статус
-                val prefs = context.getSharedPreferences("kiosk_config", Context.MODE_PRIVATE)
-                prefs.edit().apply {
-                    putBoolean("is_provisioned", true)
-                    putLong("provisioned_at", System.currentTimeMillis())
-                    apply()
+                // Стартиране на ProvisioningCompleteActivity
+                try {
+                    val setupIntent = Intent(context, ProvisioningCompleteActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        if (extras != null) {
+                            putExtras(extras)
+                        }
+                    }
+                    context.startActivity(setupIntent)
+                    Log.i(TAG, "ProvisioningCompleteActivity started")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to start ProvisioningCompleteActivity", e)
                 }
-                Log.i(TAG, "Provisioning status saved")
+
             } else {
                 Log.e(TAG, "ERROR: Not Device Owner after provisioning!")
             }
 
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking Device Owner status", e)
+            Log.e(TAG, "Error in onProfileProvisioningComplete", e)
         }
 
         Log.i(TAG, "onProfileProvisioningComplete finished")

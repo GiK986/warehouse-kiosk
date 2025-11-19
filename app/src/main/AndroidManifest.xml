@@ -46,9 +46,18 @@
             </intent-filter>
         </activity>
 
-        <!-- PROVISIONING COMPLETE ACTIVITY - ВРЕМЕННО ИЗКЛЮЧЕНА ЗА ТЕСТ -->
-        <!-- Тестваме дали Device Owner се setва без тази activity -->
-        <!--
+        <!-- GET_PROVISIONING_MODE - ЗАДЪЛЖИТЕЛНО за Android 12+ -->
+        <activity
+            android:name=".GetProvisioningModeActivity"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <intent-filter>
+                <action android:name="android.app.action.GET_PROVISIONING_MODE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+
+        <!-- ADMIN_POLICY_COMPLIANCE - ЗАДЪЛЖИТЕЛНО за Android 10+ -->
         <activity
             android:name=".ProvisioningCompleteActivity"
             android:exported="true"
@@ -58,7 +67,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        -->
 
         <!-- BroadcastReceiver за следене на рестарт -->
         <receiver android:name=".services.BootReceiver" android:exported="true">
