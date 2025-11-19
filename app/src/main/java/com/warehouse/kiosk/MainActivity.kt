@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
@@ -48,16 +49,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        Log.i("MainActivity", "====================================")
+        Log.i("MainActivity", "MainActivity onCreate()")
+        Log.i("MainActivity", "====================================")
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         onBackPressedDispatcher.addCallback(this) {}
 
-        if (isDeviceOwner) {
+        // Check Device Owner status
+        val deviceOwnerStatus = isDeviceOwner
+        Log.i("MainActivity", "Device Owner status: $deviceOwnerStatus")
+
+        if (deviceOwnerStatus) {
+            Log.i("MainActivity", "We ARE Device Owner - setting up kiosk policies")
             // This now happens synchronously
             setKioskPolicies()
             lifecycleScope.launch {
                 repository.setKioskModeActive(true)
             }
             observeKioskMode()
+        } else {
+            Log.w("MainActivity", "We are NOT Device Owner - kiosk policies will NOT be set")
+            Log.w("MainActivity", "To become Device Owner, perform QR code provisioning")
         }
 
         handleIntent(intent)
@@ -212,20 +225,69 @@ class MainActivity : ComponentActivity() {
         get() = (getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE
 
     private fun setKioskPolicies() {
+        Log.i("MainActivity", "====================================")
+        Log.i("MainActivity", "Setting Kiosk Policies...")
+        Log.i("MainActivity", "====================================")
+
         lifecycleScope.launch {
             // Actively crown ourselves as the king (launcher)
-            val launchers = queryAllLaunchers()
-            val selfTarget = pickSelfLauncher(launchers, packageName)
-            setHomeLauncher(selfTarget)
+            try {
+                Log.d("MainActivity", "Setting home launcher...")
+                val launchers = queryAllLaunchers()
+                val selfTarget = pickSelfLauncher(launchers, packageName)
+                setHomeLauncher(selfTarget)
+                Log.i("MainActivity", "✓ Home launcher set successfully")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "✗ Failed to set home launcher", e)
+            }
         }
 
         // Set Lock Task Features
-        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-        val adminComponentName = ComponentName(this, DeviceOwnerReceiver::class.java)
-        val flags = DevicePolicyManager.LOCK_TASK_FEATURE_HOME or
-                DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW or
-                DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO or
-                DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS
-        dpm.setLockTaskFeatures(adminComponentName, flags)
+        try {
+            Log.d("MainActivity", "Setting Lock Task Features...")
+            val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+            val adminComponentName = ComponentName(this, DeviceOwnerReceiver::class.java)
+
+            val flags = DevicePolicyManager.LOCK_TASK_FEATURE_HOME or
+                    DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW or
+                    DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO or
+                    DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS
+
+            Log.d("MainActivity", "Flags to set: $flags")
+            Log.d("MainActivity", "  - LOCK_TASK_FEATURE_HOME: ${DevicePolicyManager.LOCK_TASK_FEATURE_HOME}")
+            Log.d("MainActivity", "  - LOCK_TASK_FEATURE_OVERVIEW: ${DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW}")
+            Log.d("MainActivity", "  - LOCK_TASK_FEATURE_SYSTEM_INFO: ${DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO}")
+            Log.d("MainActivity", "  - LOCK_TASK_FEATURE_GLOBAL_ACTIONS: ${DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS}")
+
+            dpm.setLockTaskFeatures(adminComponentName, flags)
+
+            // Verify features were set
+            val actualFlags = dpm.getLockTaskFeatures(adminComponentName)
+            Log.i("MainActivity", "✓ Lock Task Features set successfully!")
+            Log.i("MainActivity", "Actual flags applied: $actualFlags")
+
+            // Check each feature
+            val hasHome = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_HOME) != 0
+            val hasOverview = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW) != 0
+            val hasSystemInfo = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO) != 0
+            val hasGlobalActions = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS) != 0
+
+            Log.i("MainActivity", "Feature verification:")
+            Log.i("MainActivity", "  HOME: ${if (hasHome) "✓ ENABLED" else "✗ DISABLED"}")
+            Log.i("MainActivity", "  OVERVIEW: ${if (hasOverview) "✓ ENABLED" else "✗ DISABLED"}")
+            Log.i("MainActivity", "  SYSTEM_INFO: ${if (hasSystemInfo) "✓ ENABLED" else "✗ DISABLED"}")
+            Log.i("MainActivity", "  GLOBAL_ACTIONS: ${if (hasGlobalActions) "✓ ENABLED" else "✗ DISABLED"}")
+
+            if (!hasHome || !hasOverview) {
+                Log.w("MainActivity", "⚠ WARNING: HOME or OVERVIEW features were not applied!")
+            }
+
+        } catch (e: Exception) {
+            Log.e("MainActivity", "✗ Failed to set Lock Task Features", e)
+        }
+
+        Log.i("MainActivity", "====================================")
+        Log.i("MainActivity", "Kiosk Policies setup completed")
+        Log.i("MainActivity", "====================================")
     }
 }
