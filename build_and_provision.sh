@@ -90,10 +90,10 @@ payload = {
     "android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM": "$CHECKSUM",
     "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION": "$APK_URL",
 #    "android.app.extra.PROVISIONING_WIFI_SSID": "$WIFI_SSID",
-#    "android.app.extra.PROVISIONING_WIFI_SECURITY_TYPE": "WPA", # Може да е WEP, EAP или OPEN
+#    "android.app.extra.PROVISIONING_WIFI_SECURITY_TYPE": "WPA", # Може да е WEP, EAP або OPEN
 #    "android.app.extra.PROVISIONING_WIFI_PASSWORD": "$WIFI_PASSWORD",
     "android.app.extra.PROVISIONING_SKIP_ENCRYPTION": False,
-    "android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED": False,
+    "android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED": True,
 }
 print(payload)
 json_string = json.dumps(payload, separators=(',', ':'))
