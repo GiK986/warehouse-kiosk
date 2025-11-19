@@ -24,14 +24,15 @@ import com.warehouse.kiosk.services.DeviceOwnerReceiver
 import com.warehouse.kiosk.ui.theme.WarehouseKioskTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 // Global state to control the password dialog visibility
 val showPasswordDialog = mutableStateOf(false)
@@ -61,13 +62,40 @@ class MainActivity : ComponentActivity() {
         Log.i("MainActivity", "Device Owner status: $deviceOwnerStatus")
 
         if (deviceOwnerStatus) {
-            Log.i("MainActivity", "We ARE Device Owner - setting up kiosk policies")
-            // This now happens synchronously
-            setKioskPolicies()
+            // Check if we should set up kiosk policies
+            // Only set policies if:
+            // 1. Coming from provisioning (first time setup), OR
+            // 2. Kiosk mode is already active (re-entering after app restart)
+            val fromProvisioning = intent.getBooleanExtra("from_provisioning", false)
+
             lifecycleScope.launch {
-                repository.setKioskModeActive(true)
+                val kioskModeActive = repository.isKioskModeActive.first()
+                Log.i("MainActivity", "From provisioning: $fromProvisioning")
+                Log.i("MainActivity", "Kiosk mode active in repository: $kioskModeActive")
+
+                if (fromProvisioning || kioskModeActive) {
+                    Log.i("MainActivity", "We ARE Device Owner - setting up kiosk policies")
+
+                    // Set policies on main thread
+                    withContext(Dispatchers.Main) {
+                        setKioskPolicies()
+                    }
+
+                    // Ensure kiosk mode is marked as active
+                    if (!kioskModeActive) {
+                        Log.i("MainActivity", "First time setup - activating kiosk mode")
+                        repository.setKioskModeActive(true)
+                    }
+
+                    // Start observing kiosk mode changes
+                    observeKioskMode()
+                } else {
+                    Log.i("MainActivity", "Skipping kiosk setup:")
+                    Log.i("MainActivity", "  - Not from provisioning")
+                    Log.i("MainActivity", "  - Kiosk mode not active in repository")
+                    Log.i("MainActivity", "  - This is expected after Exit Kiosk Mode")
+                }
             }
-            observeKioskMode()
         } else {
             Log.w("MainActivity", "We are NOT Device Owner - kiosk policies will NOT be set")
             Log.w("MainActivity", "To become Device Owner, perform QR code provisioning")
@@ -217,16 +245,21 @@ class MainActivity : ComponentActivity() {
                 Log.e("MainActivity", "✗ Failed to restore launcher", e)
             }
 
-            // Update state and exit
+            // Update state FIRST (before finish)
             repository.setKioskModeActive(false)
             Log.i("MainActivity", "✓ Kiosk mode deactivated in repository")
 
             Log.i("MainActivity", "====================================")
             Log.i("MainActivity", "Kiosk Mode Exit Complete!")
             Log.i("MainActivity", "====================================")
+            Log.i("MainActivity", "Finishing MainActivity - system will show previous launcher")
 
-            startHome()
+            // Just finish - don't start home
+            // This prevents MainActivity from restarting and re-setting policies
             finish()
+
+            // Android will automatically show the previous launcher after we finish
+            // Lock Task Features are already reset to 0, so HOME and OVERVIEW will be available
         }
     }
 
