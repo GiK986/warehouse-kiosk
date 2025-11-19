@@ -163,21 +163,68 @@ class MainActivity : ComponentActivity() {
 
     private fun exitKioskAndFinish() {
         lifecycleScope.launch {
+            Log.i("MainActivity", "====================================")
+            Log.i("MainActivity", "Exiting Kiosk Mode...")
+            Log.i("MainActivity", "====================================")
+
             val dpm = getSystemService(DevicePolicyManager::class.java)
+            val adminComponent = ComponentName(this@MainActivity, DeviceOwnerReceiver::class.java)
 
             // Stop LockTask mode
             if (isInLockTaskModeCompat()) {
-                try { stopLockTask() } catch (_: Throwable) {}
+                try {
+                    Log.d("MainActivity", "Stopping Lock Task mode...")
+                    stopLockTask()
+                    Log.i("MainActivity", "✓ Lock Task mode stopped")
+                } catch (e: Throwable) {
+                    Log.e("MainActivity", "✗ Failed to stop Lock Task mode", e)
+                }
             }
-            dpm.setLockTaskPackages(ComponentName(this@MainActivity, DeviceOwnerReceiver::class.java), emptyArray())
+
+            // Clear lock task packages
+            try {
+                Log.d("MainActivity", "Clearing lock task packages...")
+                dpm.setLockTaskPackages(adminComponent, emptyArray())
+                Log.i("MainActivity", "✓ Lock task packages cleared")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "✗ Failed to clear lock task packages", e)
+            }
+
+            // КРИТИЧНО: Reset Lock Task Features (enable всички бутони)
+            try {
+                Log.d("MainActivity", "Resetting Lock Task Features to NONE...")
+                val beforeFeatures = dpm.getLockTaskFeatures(adminComponent)
+                Log.d("MainActivity", "Features before reset: $beforeFeatures")
+
+                // Задаване на 0 = LOCK_TASK_FEATURE_NONE (всички бутони достъпни)
+                dpm.setLockTaskFeatures(adminComponent, 0)
+
+                val afterFeatures = dpm.getLockTaskFeatures(adminComponent)
+                Log.i("MainActivity", "✓ Lock Task Features reset to: $afterFeatures")
+                Log.i("MainActivity", "HOME and OVERVIEW buttons should now be available!")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "✗ Failed to reset Lock Task Features", e)
+            }
 
             // Set a system launcher as the default
-            val launchers = queryAllLaunchers()
-            val systemLauncher = pickNonSelfLauncher(launchers, packageName)
-            setHomeLauncher(systemLauncher)
+            try {
+                Log.d("MainActivity", "Restoring system launcher...")
+                val launchers = queryAllLaunchers()
+                val systemLauncher = pickNonSelfLauncher(launchers, packageName)
+                setHomeLauncher(systemLauncher)
+                Log.i("MainActivity", "✓ System launcher restored")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "✗ Failed to restore launcher", e)
+            }
 
             // Update state and exit
             repository.setKioskModeActive(false)
+            Log.i("MainActivity", "✓ Kiosk mode deactivated in repository")
+
+            Log.i("MainActivity", "====================================")
+            Log.i("MainActivity", "Kiosk Mode Exit Complete!")
+            Log.i("MainActivity", "====================================")
+
             startHome()
             finish()
         }
@@ -244,42 +291,67 @@ class MainActivity : ComponentActivity() {
 
         // Set Lock Task Features
         try {
-            Log.d("MainActivity", "Setting Lock Task Features...")
+            Log.d("MainActivity", "Checking Lock Task Features...")
             val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
             val adminComponentName = ComponentName(this, DeviceOwnerReceiver::class.java)
 
-            val flags = DevicePolicyManager.LOCK_TASK_FEATURE_HOME or
+            val desiredFlags = DevicePolicyManager.LOCK_TASK_FEATURE_HOME or
                     DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW or
                     DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO or
                     DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS
 
-            Log.d("MainActivity", "Flags to set: $flags")
-            Log.d("MainActivity", "  - LOCK_TASK_FEATURE_HOME: ${DevicePolicyManager.LOCK_TASK_FEATURE_HOME}")
-            Log.d("MainActivity", "  - LOCK_TASK_FEATURE_OVERVIEW: ${DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW}")
-            Log.d("MainActivity", "  - LOCK_TASK_FEATURE_SYSTEM_INFO: ${DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO}")
-            Log.d("MainActivity", "  - LOCK_TASK_FEATURE_GLOBAL_ACTIONS: ${DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS}")
+            // Check current features
+            val currentFlags = dpm.getLockTaskFeatures(adminComponentName)
+            Log.d("MainActivity", "Current Lock Task Features: $currentFlags")
+            Log.d("MainActivity", "Desired Lock Task Features: $desiredFlags")
 
-            dpm.setLockTaskFeatures(adminComponentName, flags)
+            // Only set if different
+            if (currentFlags != desiredFlags) {
+                Log.i("MainActivity", "Features need update - setting new features...")
 
-            // Verify features were set
-            val actualFlags = dpm.getLockTaskFeatures(adminComponentName)
-            Log.i("MainActivity", "✓ Lock Task Features set successfully!")
-            Log.i("MainActivity", "Actual flags applied: $actualFlags")
+                Log.d("MainActivity", "Flags to set: $desiredFlags")
+                Log.d("MainActivity", "  - LOCK_TASK_FEATURE_HOME: ${DevicePolicyManager.LOCK_TASK_FEATURE_HOME}")
+                Log.d("MainActivity", "  - LOCK_TASK_FEATURE_OVERVIEW: ${DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW}")
+                Log.d("MainActivity", "  - LOCK_TASK_FEATURE_SYSTEM_INFO: ${DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO}")
+                Log.d("MainActivity", "  - LOCK_TASK_FEATURE_GLOBAL_ACTIONS: ${DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS}")
 
-            // Check each feature
-            val hasHome = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_HOME) != 0
-            val hasOverview = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW) != 0
-            val hasSystemInfo = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO) != 0
-            val hasGlobalActions = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS) != 0
+                dpm.setLockTaskFeatures(adminComponentName, desiredFlags)
 
-            Log.i("MainActivity", "Feature verification:")
-            Log.i("MainActivity", "  HOME: ${if (hasHome) "✓ ENABLED" else "✗ DISABLED"}")
-            Log.i("MainActivity", "  OVERVIEW: ${if (hasOverview) "✓ ENABLED" else "✗ DISABLED"}")
-            Log.i("MainActivity", "  SYSTEM_INFO: ${if (hasSystemInfo) "✓ ENABLED" else "✗ DISABLED"}")
-            Log.i("MainActivity", "  GLOBAL_ACTIONS: ${if (hasGlobalActions) "✓ ENABLED" else "✗ DISABLED"}")
+                // Verify features were set
+                val actualFlags = dpm.getLockTaskFeatures(adminComponentName)
+                Log.i("MainActivity", "✓ Lock Task Features set successfully!")
+                Log.i("MainActivity", "Actual flags applied: $actualFlags")
 
-            if (!hasHome || !hasOverview) {
-                Log.w("MainActivity", "⚠ WARNING: HOME or OVERVIEW features were not applied!")
+                // Check each feature
+                val hasHome = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_HOME) != 0
+                val hasOverview = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW) != 0
+                val hasSystemInfo = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO) != 0
+                val hasGlobalActions = (actualFlags and DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS) != 0
+
+                Log.i("MainActivity", "Feature verification:")
+                Log.i("MainActivity", "  HOME: ${if (hasHome) "✓ ENABLED" else "✗ DISABLED"}")
+                Log.i("MainActivity", "  OVERVIEW: ${if (hasOverview) "✓ ENABLED" else "✗ DISABLED"}")
+                Log.i("MainActivity", "  SYSTEM_INFO: ${if (hasSystemInfo) "✓ ENABLED" else "✗ DISABLED"}")
+                Log.i("MainActivity", "  GLOBAL_ACTIONS: ${if (hasGlobalActions) "✓ ENABLED" else "✗ DISABLED"}")
+
+                if (!hasHome || !hasOverview) {
+                    Log.w("MainActivity", "⚠ WARNING: HOME or OVERVIEW features were not applied!")
+                    Log.w("MainActivity", "This is the problem you reported!")
+                }
+            } else {
+                Log.i("MainActivity", "✓ Lock Task Features already correct - no update needed")
+
+                // Still log current state for debugging
+                val hasHome = (currentFlags and DevicePolicyManager.LOCK_TASK_FEATURE_HOME) != 0
+                val hasOverview = (currentFlags and DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW) != 0
+                val hasSystemInfo = (currentFlags and DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO) != 0
+                val hasGlobalActions = (currentFlags and DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS) != 0
+
+                Log.d("MainActivity", "Current features:")
+                Log.d("MainActivity", "  HOME: ${if (hasHome) "✓" else "✗"}")
+                Log.d("MainActivity", "  OVERVIEW: ${if (hasOverview) "✓" else "✗"}")
+                Log.d("MainActivity", "  SYSTEM_INFO: ${if (hasSystemInfo) "✓" else "✗"}")
+                Log.d("MainActivity", "  GLOBAL_ACTIONS: ${if (hasGlobalActions) "✓" else "✗"}")
             }
 
         } catch (e: Exception) {
