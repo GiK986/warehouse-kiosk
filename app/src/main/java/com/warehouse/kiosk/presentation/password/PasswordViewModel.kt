@@ -62,4 +62,5 @@ class PasswordViewModel @Inject constructor(
     fun consumeEvents() {
         _uiState.update { PasswordUiState() } // Reset state after navigation
     }
+
 }

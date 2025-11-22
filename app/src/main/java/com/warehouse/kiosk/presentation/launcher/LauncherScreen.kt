@@ -27,8 +27,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.warehouse.kiosk.R
 import com.warehouse.kiosk.data.database.AppEntity
 import com.warehouse.kiosk.presentation.password.PasswordDialog
-import com.warehouse.kiosk.showPasswordDialog
+//import com.warehouse.kiosk.showPasswordDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,23 +57,24 @@ fun LauncherScreen(
     onNavigateToAdmin: () -> Unit
 ) {
     val enabledApps by viewModel.enabledApps.collectAsStateWithLifecycle()
+    val showDialog by viewModel.showPasswordDialog.collectAsState()
 
-    if (showPasswordDialog.value) {
-        PasswordDialog(
-            onDismiss = { showPasswordDialog.value = false },
-            onLoginSuccess = {
-                showPasswordDialog.value = false
-                onNavigateToAdmin()
-            }
-        )
-    }
+    PasswordDialog(
+        show = showDialog,
+        onDismiss = { viewModel.hidePasswordDialog() },
+        onLoginSuccess = {
+            // PasswordDialog вече cleanup-нал input channels преди да вика този callback
+            onNavigateToAdmin()
+        }
+    )
+
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = stringResource(id = R.string.app_name)) },
+                title = { Text(text = stringResource(id = R.string.app_name) + " (Kiosk Mode)") },
                 actions = {
-                    IconButton(onClick = { showPasswordDialog.value = true }) {
+                    IconButton(onClick = { viewModel.showPasswordDialog()}) {
                         Icon(imageVector = Icons.Default.Settings, contentDescription = "Admin Settings")
                     }
                 }

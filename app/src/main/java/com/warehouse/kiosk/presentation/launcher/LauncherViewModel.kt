@@ -8,7 +8,10 @@ import com.warehouse.kiosk.data.repository.KioskRepository
 import com.warehouse.kiosk.domain.usecase.GetInstalledAppsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -49,4 +52,21 @@ class LauncherViewModel @Inject constructor(
             context.startActivity(it)
         }
     }
+
+    // 1. Създайте частен, променлив StateFlow, който ще държи състоянието.
+    private val _showPasswordDialog = MutableStateFlow(false)
+
+    // 2. Изложете го като публичен, неизменим StateFlow, който UI-ът ще наблюдава.
+    val showPasswordDialog: StateFlow<Boolean> = _showPasswordDialog.asStateFlow()
+
+    // 3. Функция, която показва диалога (променя стойността на true).
+    fun showPasswordDialog() {
+        _showPasswordDialog.value = true
+    }
+
+    // 4. Функция, която скрива диалога (променя стойността на false).
+    fun hidePasswordDialog() {
+        _showPasswordDialog.value = false
+    }
+
 }

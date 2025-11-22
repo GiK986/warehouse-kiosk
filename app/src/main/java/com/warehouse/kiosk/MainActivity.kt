@@ -128,7 +128,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             WarehouseKioskTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    AppNavigation(onExitKiosk = ::exitKioskAndFinish)
+                    AppNavigation()
                 }
             }
         }
@@ -209,95 +209,6 @@ class MainActivity : ComponentActivity() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         startActivity(homeIntent)
-    }
-
-    private fun exitKioskAndFinish() {
-        lifecycleScope.launch {
-            Log.i("MainActivity", "====================================")
-            Log.i("MainActivity", "Exiting Kiosk Mode...")
-            Log.i("MainActivity", "====================================")
-
-            // КРИТИЧНО: Деактивираме kiosk mode ПЪРВО!
-            // Android ще рестартира MainActivity автоматично след някои от следващите операции
-            // Затова ТРЯБВА да е false ПРЕДИ това да се случи!
-            Log.d("MainActivity", "Deactivating kiosk mode in repository FIRST...")
-            repository.setKioskModeActive(false)
-            Log.i("MainActivity", "✓ Kiosk mode deactivated in repository")
-            Log.i("MainActivity", "  (This MUST happen before any system operations)")
-
-            val dpm = getSystemService(DevicePolicyManager::class.java)
-            val adminComponent = ComponentName(this@MainActivity, DeviceOwnerReceiver::class.java)
-
-            // Stop LockTask mode
-            if (isInLockTaskModeCompat()) {
-                try {
-                    Log.d("MainActivity", "Stopping Lock Task mode...")
-                    stopLockTask()
-                    Log.i("MainActivity", "✓ Lock Task mode stopped")
-                } catch (e: Throwable) {
-                    Log.e("MainActivity", "✗ Failed to stop Lock Task mode", e)
-                }
-            }
-
-            // КРИТИЧНО: Reset Lock Task Features (enable всички бутони)
-            // ПРЕДИ setLockTaskPackages защото то може да trigger restart
-            try {
-                Log.d("MainActivity", "Resetting Lock Task Features to NONE...")
-                val beforeFeatures = dpm.getLockTaskFeatures(adminComponent)
-                Log.d("MainActivity", "Features before reset: $beforeFeatures")
-
-                // Задаване на 0 = LOCK_TASK_FEATURE_NONE (всички бутони достъпни)
-                dpm.setLockTaskFeatures(adminComponent, 0)
-
-                val afterFeatures = dpm.getLockTaskFeatures(adminComponent)
-                Log.i("MainActivity", "✓ Lock Task Features reset to: $afterFeatures")
-                Log.i("MainActivity", "HOME and OVERVIEW buttons should now be available!")
-            } catch (e: Exception) {
-                Log.e("MainActivity", "✗ Failed to reset Lock Task Features", e)
-            }
-
-            // Set a system launcher as the default
-            // ПРЕДИ setLockTaskPackages защото то може да trigger restart
-            try {
-                Log.d("MainActivity", "Restoring system launcher...")
-                val launchers = queryAllLaunchers()
-                val systemLauncher = pickNonSelfLauncher(launchers, packageName)
-                setHomeLauncher(systemLauncher)
-                Log.i("MainActivity", "✓ System launcher restored")
-            } catch (e: Exception) {
-                Log.e("MainActivity", "✗ Failed to restore launcher", e)
-            }
-
-            // Clear lock task packages
-            // ВНИМАНИЕ: Това може да trigger автоматичен restart на HOME launcher!
-            try {
-                Log.d("MainActivity", "Clearing lock task packages...")
-                Log.d("MainActivity", "  (May trigger automatic MainActivity restart)")
-                dpm.setLockTaskPackages(adminComponent, emptyArray())
-                Log.i("MainActivity", "✓ Lock task packages cleared")
-            } catch (e: Exception) {
-                Log.e("MainActivity", "✗ Failed to clear lock task packages", e)
-            }
-
-            Log.i("MainActivity", "====================================")
-            Log.i("MainActivity", "Kiosk Mode Exit Complete!")
-            Log.i("MainActivity", "====================================")
-
-            // Start system home launcher
-            // MainActivity може вече да е стартиран от системата (след setLockTaskPackages)
-            // Но извикваме startHome() за сигурност и затваряме текущата instance
-            Log.i("MainActivity", "Starting system HOME launcher...")
-            startHome()
-
-            // Close current MainActivity instance
-            finish()
-
-            // Ако MainActivity се рестартира сега или по-рано, onCreate() ще види:
-            //   - setupCompleted = true
-            //   - kioskModeActive = false  ← Вече е false!
-            //   - from_provisioning = false
-            // И ще ПРОПУСНЕ kiosk setup!
-        }
     }
 
     override fun onNewIntent(intent: Intent) {

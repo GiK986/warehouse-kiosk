@@ -19,14 +19,12 @@ object AppDestinations {
 }
 
 @Composable
-fun AppNavigation(
-    onExitKiosk: () -> Unit // New callback
-) {
+fun AppNavigation() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = AppDestinations.LAUNCHER_ROUTE) {
         composable(AppDestinations.LAUNCHER_ROUTE) {
             LauncherScreen(
-                onNavigateToAdmin = { navController.navigate(AppDestinations.ADMIN_ROUTE) } // Navigate to the new hub
+                onNavigateToAdmin = { navController.navigate(AppDestinations.ADMIN_ROUTE) }
             )
         }
 
@@ -35,8 +33,7 @@ fun AppNavigation(
                 onNavigateUp = { navController.navigateUp() },
                 onNavigateToAppSelection = { navController.navigate(AppDestinations.APP_SELECTION_ROUTE) },
                 onNavigateToKioskSettings = { navController.navigate(AppDestinations.KIOSK_SETTINGS_ROUTE) },
-                onNavigateToAutoStart = { navController.navigate(AppDestinations.AUTO_START_ROUTE) },
-                onExitKiosk = onExitKiosk // Pass the callback down
+                onNavigateToAutoStart = { navController.navigate(AppDestinations.AUTO_START_ROUTE) }
             )
         }
 

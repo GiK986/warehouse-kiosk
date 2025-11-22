@@ -13,24 +13,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -45,34 +40,11 @@ fun AdminScreen(
     onNavigateUp: () -> Unit,
     onNavigateToAppSelection: () -> Unit,
     onNavigateToKioskSettings: () -> Unit,
-    onNavigateToAutoStart: () -> Unit,
-    onExitKiosk: () -> Unit
+    onNavigateToAutoStart: () -> Unit
 ) {
     val context = LocalContext.current
     val isKioskModeActive by viewModel.isKioskModeActive.collectAsStateWithLifecycle()
     val autoStartAppName by viewModel.autoStartAppName.collectAsStateWithLifecycle()
-    var showExitDialog by remember { mutableStateOf(false) }
-
-    if (showExitDialog) {
-        AlertDialog(
-            onDismissRequest = { showExitDialog = false },
-            title = { Text("Exit Kiosk Mode") },
-            text = { Text("Are you sure you want to exit kiosk mode and return to the default launcher?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showExitDialog = false
-                    onExitKiosk()
-                }) {
-                    Text("Yes, Exit")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showExitDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -126,14 +98,6 @@ fun AdminScreen(
                     subtitle = autoStartAppName,
                     icon = Icons.Default.PlayArrow,
                     onClick = onNavigateToAutoStart
-                )
-            }
-            item {
-                SettingsItem(
-                    title = "Exit Kiosk Mode",
-                    subtitle = "Return to default launcher",
-                    icon = Icons.AutoMirrored.Filled.ExitToApp,
-                    onClick = { showExitDialog = true }
                 )
             }
         }
