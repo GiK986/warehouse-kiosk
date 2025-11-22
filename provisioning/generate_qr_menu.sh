@@ -1,6 +1,20 @@
 #!/bin/bash
 # Interactive QR Code Generator Menu
 # Позволява избор на локация от меню за генериране на QR код
+#
+# Usage: ./generate_qr_menu.sh
+#
+# Функционалност:
+# - Показва интерактивно меню с всички налични локации
+# - Опция за генериране на QR кодове за ВСИЧКИ локации наведнъж
+# - Опция за избор на конкретна локация
+# - Автоматично връща към менюто след всяко генериране
+# - Exit опция за излизане от скрипта
+#
+# Изисквания:
+# - Python 3
+# - qrcode library (pip install qrcode[pil])
+# - generate_qr.py в същата директория
 
 set -e
 
@@ -34,6 +48,36 @@ print_error() {
 
 print_info() {
     echo -e "${CYAN}ℹ️  $1${NC}"
+}
+
+show_help() {
+    cat << EOF
+${BOLD}${BLUE}QR Code Generator - Interactive Menu${NC}
+
+${BOLD}УПОТРЕБА:${NC}
+  ./generate_qr_menu.sh
+
+${BOLD}ФУНКЦИОНАЛНОСТ:${NC}
+  • Интерактивно меню с всички налични локации
+  • Генериране за ВСИЧКИ локации наведнъж
+  • Избор на конкретна локация
+  • Автоматично връщане към менюто след генериране
+
+${BOLD}ИЗИСКВАНИЯ:${NC}
+  • Python 3
+  • qrcode library: pip install qrcode[pil]
+  • generate_qr.py в същата директория
+
+${BOLD}ПРИМЕРИ:${NC}
+  # Стартиране на интерактивното меню
+  ./generate_qr_menu.sh
+
+  # След това избери:
+  # 1 - за всички локации
+  # 2-N - за конкретна локация
+  # Exit - за излизане
+
+EOF
 }
 
 # Проверява prerequisites (Python, qrcode library)
@@ -210,6 +254,12 @@ main() {
         echo ""
     done
 }
+
+# Parse command line arguments
+if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
+    show_help
+    exit 0
+fi
 
 # Run main
 main
