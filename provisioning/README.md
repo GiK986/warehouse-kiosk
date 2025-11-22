@@ -40,6 +40,30 @@ python provisioning/generate_qr.py --location plovdiv --wifi office_network
 python provisioning/generate_qr.py --location mobile_unit_01 --no-wifi
 ```
 
+## QR Code Generation Methods
+
+### Method 1: Interactive Menu (Recommended for manual use)
+
+```bash
+./generate_qr_menu.sh
+```
+
+Интерактивно меню с избор на локация.
+
+### Method 2: Command Line (Single location)
+
+```bash
+python3 generate_qr.py --location <location_id>
+```
+
+### Method 3: Batch Generation (All locations)
+
+```bash
+./generate_all_qr.sh
+```
+
+See [README_MENU.md](./README_MENU.md) for detailed menu documentation.
+
 ## 📋 Детайлни примери
 
 ### Показване на информация
