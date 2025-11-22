@@ -7,13 +7,13 @@
 
 ## ❓ Проблем
 
-Искаш да провижаниш устройство на локация А (София), но да го изпратиш на локация Б (Бургас) с различна WiFi мрежа, **без** служител да конфигурира WiFi на локация.
+Искаш да направиш provisioning устройство на локация А (София), но да го изпратиш на локация Б (Бургас) с различна WiFi мрежа, **без** служител да конфигурира WiFi на локация.
 
 ---
 
 ## ✅ Решение
 
-### Концепт
+### Концепция
 1. QR кодът съдържа provisioning WiFi (София) + data за future WiFi (Бургас)
 2. При provisioning се свързва на София WiFi
 3. След provisioning, Device Owner app **програмно добавя** Бургас WiFi
@@ -25,7 +25,7 @@
 
 ### 1. Добави в `wifi_profiles.json`:
 
-```json
+``` json
 "apl-main-wh": {
   "android.app.extra.PROVISIONING_WIFI_SSID": "EnGenius_WPA3",
   "android.app.extra.PROVISIONING_WIFI_PASSWORD": "Auto@2023",
@@ -39,7 +39,7 @@
 
 ### 2. Промени `generate_qr.py` (ред ~286):
 
-```python
+``` python
 admin_extras = {
     "warehouse_id": location["warehouse_id"],
     "wms_apk_url": location.get("wms_apk_url", ""),
@@ -54,7 +54,7 @@ admin_extras = {
 
 ### 3. Добави в `ProvisioningCompleteActivity.kt`:
 
-```kotlin
+``` kotlin
 // В onCreate() след ред 74
 val extras = intent.getBundleExtra("android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE")
 if (extras != null) {

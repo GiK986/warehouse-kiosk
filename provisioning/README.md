@@ -101,9 +101,9 @@ python provisioning/generate_qr.py \
 - System Apps Settings
 
 **Редактирай:**
-```json
+``` json
 {
-  "android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME": "com..kiosk/.DeviceOwnerReceiver",
+  "android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME": "com.warehouse.kiosk/.DeviceOwnerReceiver",
   "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION": "https://your-server.com/warehouse-kiosk-release.apk",
   ...
 }
@@ -156,17 +156,17 @@ WiFi мрежи за различни обекти:
 
 ## 🔧 CLI Параметри
 
-| Параметър | Кратка форма | Описание | Пример |
-|-----------|--------------|----------|--------|
-| `--list-locations` | - | Показва всички локации | `--list-locations` |
-| `--list-wifi` | - | Показва всички WiFi профили | `--list-wifi` |
-| `--location` | `-l` | Избор на локация **(задължително)** | `--location sofia_central` |
-| `--wifi` | `-w` | Избор на WiFi профил | `--wifi office_network` |
-| `--no-wifi` | - | БЕЗ WiFi конфигурация | `--no-wifi` |
-| `--apk` | - | Път до APK (автоматичен checksum) | `--apk path/to/app.apk` |
-| `--apk-url` | - | URL към APK файла | `--apk-url https://...` |
-| `--output` | `-o` | Име на изходния файл | `--output my_qr.png` |
-| `--config-dir` | - | Директория с configs | `--config-dir provisioning` |
+| Параметър          | Кратка форма | Описание                            | Пример                      |
+|--------------------|--------------|-------------------------------------|-----------------------------|
+| `--list-locations` | -            | Показва всички локации              | `--list-locations`          |
+| `--list-wifi`      | -            | Показва всички WiFi профили         | `--list-wifi`               |
+| `--location`       | `-l`         | Избор на локация **(задължително)** | `--location sofia_central`  |
+| `--wifi`           | `-w`         | Избор на WiFi профил                | `--wifi office_network`     |
+| `--no-wifi`        | -            | БЕЗ WiFi конфигурация               | `--no-wifi`                 |
+| `--apk`            | -            | Път до APK (автоматичен checksum)   | `--apk path/to/app.apk`     |
+| `--apk-url`        | -            | URL към APK файла                   | `--apk-url https://...`     |
+| `--output`         | `-o`         | Име на изходния файл                | `--output my_qr.png`        |
+| `--config-dir`     | -            | Директория с configs                | `--config-dir provisioning` |
 
 ## 📝 Workflow за production
 
@@ -308,7 +308,7 @@ pip install qrcode[pil]
 
 **Проверка:**
 1. APK URL-ът е ли достъпен публично?
-2. Checksumот съвпада ли с APK-то?
+2. Checksum съвпада ли с APK-то?
 3. WiFi паролата правилна ли е?
 4. Device Admin Component Name правилен ли е?
 

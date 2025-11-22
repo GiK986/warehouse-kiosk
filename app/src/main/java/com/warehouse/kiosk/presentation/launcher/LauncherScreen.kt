@@ -27,12 +27,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,7 +45,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.warehouse.kiosk.R
 import com.warehouse.kiosk.data.database.AppEntity
 import com.warehouse.kiosk.presentation.password.PasswordDialog
-//import com.warehouse.kiosk.showPasswordDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -142,7 +138,7 @@ fun AppIcon(packageName: String, modifier: Modifier = Modifier) {
     val iconDrawable: Drawable? = remember(packageName) {
         try {
             packageManager.getApplicationIcon(packageName)
-        } catch (e: PackageManager.NameNotFoundException) {
+        } catch (_: PackageManager.NameNotFoundException) {
             null // Return null if app is not found
         }
     }
