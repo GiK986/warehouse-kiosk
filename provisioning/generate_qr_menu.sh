@@ -70,22 +70,112 @@ get_available_locations() {
     echo "${locations[@]}"
 }
 
-# Main function placeholder
-main() {
-    print_header "QR Code Generator - Interactive Menu"
+# Генерира QR код за конкретна локация
+generate_single_qr() {
+    local location_id="$1"
 
-    # Test location extraction
-    print_info "Testing location extraction..."
-    locations=($(get_available_locations))
+    print_info "Генериране на QR код за: $location_id"
 
-    if [ ${#locations[@]} -eq 0 ]; then
-        print_error "Няма намерени локации!"
-        exit 1
+    if python3 "$GENERATOR_SCRIPT" --location "$location_id"; then
+        print_success "QR код генериран успешно!"
+        echo ""
+        return 0
+    else
+        print_error "Грешка при генериране на QR код"
+        echo ""
+        return 1
+    fi
+}
+
+# Генерира QR кодове за всички локации
+generate_all_qr() {
+    print_header "Генериране за ВСИЧКИ локации"
+
+    local locations=($(get_available_locations))
+    local generated_count=0
+    local failed_count=0
+
+    for location in "${locations[@]}"; do
+        print_info "Генериране за: $location"
+
+        if python3 "$GENERATOR_SCRIPT" --location "$location" > /dev/null 2>&1; then
+            print_success "  ✓ $location"
+            ((generated_count++))
+        else
+            print_error "  ✗ $location"
+            ((failed_count++))
+        fi
+    done
+
+    echo ""
+    print_header "Резюме"
+    print_success "Успешно: $generated_count QR кода"
+
+    if [ $failed_count -gt 0 ]; then
+        print_error "Неуспешни: $failed_count"
     fi
 
-    print_success "Намерени ${#locations[@]} локации:"
-    for loc in "${locations[@]}"; do
-        echo "  - $loc"
+    echo ""
+}
+
+# Main menu loop
+main() {
+    while true; do
+        print_header "QR Code Generator - Interactive Menu"
+
+        # Извличане на налични локации
+        locations=($(get_available_locations))
+
+        if [ ${#locations[@]} -eq 0 ]; then
+            print_error "Няма намерени локации!"
+            exit 1
+        fi
+
+        # Изграждане на меню опции
+        menu_options=("🌍 Генерирай за ВСИЧКИ локации")
+
+        for loc in "${locations[@]}"; do
+            menu_options+=("📍 $loc")
+        done
+
+        menu_options+=("❌ Exit")
+
+        # Показване на меню
+        echo "Моля избери локация:"
+        echo ""
+
+        PS3=$'\n'"👉 Избор (номер): "
+
+        select choice in "${menu_options[@]}"; do
+            case $REPLY in
+                1)
+                    # Генериране за всички
+                    generate_all_qr
+                    break
+                    ;;
+                $((${#menu_options[@]})))
+                    # Exit
+                    print_info "Довиждане!"
+                    exit 0
+                    ;;
+                *)
+                    # Конкретна локация
+                    # Изчисляваме индекс в locations array (REPLY - 2, защото:
+                    # 1 = "All", 2-N = locations, N+1 = "Exit")
+                    if [ "$REPLY" -ge 2 ] && [ "$REPLY" -lt ${#menu_options[@]} ]; then
+                        location_index=$((REPLY - 2))
+                        selected_location="${locations[$location_index]}"
+                        generate_single_qr "$selected_location"
+                        break
+                    else
+                        print_error "Невалиден избор!"
+                        break
+                    fi
+                    ;;
+            esac
+        done
+
+        echo ""
     done
 }
 
