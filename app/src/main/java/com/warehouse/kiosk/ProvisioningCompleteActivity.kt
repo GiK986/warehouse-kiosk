@@ -2,7 +2,6 @@ package com.warehouse.kiosk
 
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
@@ -21,7 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import com.warehouse.kiosk.services.DeviceOwnerReceiver
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
+//import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * РАЗШИРЕНА версия на ProvisioningCompleteActivity
@@ -46,7 +45,7 @@ class ProvisioningCompleteActivity : ComponentActivity() {
     }
 
     // Флаг за предотвратяване на двойна навигация
-    private val isNavigating = AtomicBoolean(false)
+    // private val isNavigating = AtomicBoolean(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +53,7 @@ class ProvisioningCompleteActivity : ComponentActivity() {
         Log.d(TAG, "ProvisioningCompleteActivity started")
 
         // Инициализация на Device Policy Manager
-        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        val dpm = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
         val adminComponent = ComponentName(this, DeviceOwnerReceiver::class.java)
 
         // Проверка дали сме Device Owner
@@ -187,7 +186,7 @@ class ProvisioningCompleteActivity : ComponentActivity() {
      */
     private fun saveProvisioningStatus() {
         try {
-            val prefs = getSharedPreferences("kiosk_config", Context.MODE_PRIVATE)
+            val prefs = getSharedPreferences("kiosk_config", MODE_PRIVATE)
             prefs.edit().apply {
                 putBoolean("is_provisioned", true)
                 putLong("provisioned_at", System.currentTimeMillis())

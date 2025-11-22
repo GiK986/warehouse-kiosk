@@ -203,13 +203,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun startHome() {
-        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_HOME)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        startActivity(homeIntent)
-    }
+//    private fun startHome() {
+//        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+//            addCategory(Intent.CATEGORY_HOME)
+//            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+//        }
+//        startActivity(homeIntent)
+//    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)

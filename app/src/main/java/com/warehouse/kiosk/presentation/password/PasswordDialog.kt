@@ -77,7 +77,7 @@ fun PasswordDialog(
             onDismissRequest = {
                 if (!isClosing) {
                     keyboardController?.hide()
-                    password = ""
+                    "".also { password = it }
                     onDismiss()
                 }
             },
@@ -123,7 +123,7 @@ fun PasswordDialog(
                     onClick = {
                         if (!isClosing) {
                             keyboardController?.hide()
-                            password = ""
+                            "".also { password = it }
                             onDismiss()
                         }
                     },
