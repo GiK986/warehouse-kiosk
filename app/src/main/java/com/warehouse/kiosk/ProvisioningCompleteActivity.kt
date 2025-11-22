@@ -89,7 +89,7 @@ class ProvisioningCompleteActivity : ComponentActivity() {
         configureSystemButtons(dpm, adminComponent)
 
         // 4. Подготовка за Kiosk режим (Lock Task)
-        setupKioskPolicies(dpm, adminComponent)
+//        setupKioskPolicies(dpm, adminComponent)
 
         // Запазване на provisioning статус
         saveProvisioningStatus()
@@ -103,11 +103,11 @@ class ProvisioningCompleteActivity : ComponentActivity() {
             }
         }
 
-        // Auto-start след 3 секунди
-        lifecycleScope.launch {
-            delay(AUTO_START_DELAY_MS)
-            finishAndStartMain()
-        }
+//        // Auto-start след 3 секунди
+//        lifecycleScope.launch {
+//            delay(AUTO_START_DELAY_MS)
+//            finishAndStartMain()
+//        }
     }
 
     @Composable
@@ -208,12 +208,12 @@ class ProvisioningCompleteActivity : ComponentActivity() {
 
             setResult(RESULT_OK)
 
-            val intent = Intent(this, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                putExtra("from_provisioning", true)
-            }
+//            val intent = Intent(this, MainActivity::class.java).apply {
+//                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+//                putExtra("from_provisioning", true)
+//            }
 
-            startActivity(intent)
+//            startActivity(intent)
             finish()
 
             Log.i(TAG, "MainActivity started, ProvisioningCompleteActivity finished")
