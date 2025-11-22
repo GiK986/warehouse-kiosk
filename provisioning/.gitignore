@@ -1,0 +1,34 @@
+# Генерирани QR кодове
+*.png
+qr_codes/
+configs/
+# Конфигурации с чувствителни данни (опционално - uncommment ако имаш production secrets)
+# wifi_profiles.json
+# locations.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Backup файлове
+*.bak
+*.backup
+*~
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Тестови генерации
+test_*.png
+qr_test*.png
+device_owner_qr.png
+
+# Temporary
+.DS_Store
+Thumbs.db
