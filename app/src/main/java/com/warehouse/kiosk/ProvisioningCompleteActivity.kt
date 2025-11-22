@@ -209,7 +209,7 @@ class ProvisioningCompleteActivity : ComponentActivity() {
             setResult(RESULT_OK)
 
             val intent = Intent(this, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 putExtra("from_provisioning", true)
             }
 
