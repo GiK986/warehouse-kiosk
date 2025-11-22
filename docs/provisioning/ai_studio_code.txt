@@ -1,0 +1,14 @@
+<activity
+    android:name=".ProvisioningCompleteActivity"
+    android:exported="true"
+    android:theme="@style/Theme.WarehouseKiosk"
+    android:noHistory="true"          <!-- Убива activity-то веднага щом не е видимо -->
+    android:excludeFromRecents="true" <!-- Скрива го от менюто с отворени приложения -->
+    android:screenOrientation="locked"> <!-- Добра практика за kiosk -->
+    
+    <!-- Това е филтърът, който Android търси след provisioning -->
+    <intent-filter>
+        <action android:name="android.app.action.ADMIN_POLICY_COMPLIANCE" />
+        <category android:name="android.intent.category.DEFAULT" />
+    </intent-filter>
+</activity>
