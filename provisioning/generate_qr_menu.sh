@@ -36,6 +36,32 @@ print_info() {
     echo -e "${CYAN}ℹ️  $1${NC}"
 }
 
+# Проверява prerequisites (Python, qrcode library)
+check_prerequisites() {
+    local has_errors=0
+
+    # Проверка за Python 3
+    if ! command -v python3 &> /dev/null; then
+        print_error "Python 3 не е намерен!"
+        has_errors=1
+    fi
+
+    # Проверка за qrcode библиотека
+    if ! python3 -c "import qrcode" 2>/dev/null; then
+        print_error "qrcode библиотеката не е инсталирана"
+        echo "Инсталирай с: pip install qrcode[pil]"
+        has_errors=1
+    fi
+
+    # Проверка за generate_qr.py
+    if [ ! -f "$GENERATOR_SCRIPT" ]; then
+        print_error "generate_qr.py не е намерен в $SCRIPT_DIR"
+        has_errors=1
+    fi
+
+    return $has_errors
+}
+
 # Извлича location IDs от generate_qr.py --list-locations
 get_available_locations() {
     local locations=()
@@ -120,6 +146,12 @@ generate_all_qr() {
 
 # Main menu loop
 main() {
+    # Проверка на prerequisites
+    if ! check_prerequisites; then
+        print_error "Моля инсталирай липсващите dependencies"
+        exit 1
+    fi
+
     while true; do
         print_header "QR Code Generator - Interactive Menu"
 
