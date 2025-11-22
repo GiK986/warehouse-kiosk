@@ -60,7 +60,7 @@ get_available_locations() {
 
     while IFS= read -r line; do
         # Търси редове които започват с whitespace и са на първо ниво (location ID)
-        if [[ $line =~ ^[[:space:]]{2}([a-z0-9_-]+)$ ]]; then
+        if [[ $line =~ ^[[:space:]]{2}([a-zA-Z0-9_-]+)$ ]]; then
             location_id="${BASH_REMATCH[1]}"
             locations+=("$location_id")
         fi
