@@ -37,6 +37,9 @@ import android.content.pm.ResolveInfo
 // Global state to control the password dialog visibility
 val showPasswordDialog = mutableStateOf(false)
 
+// Global state to trigger navigation reset to launcher
+val shouldResetToLauncher = mutableStateOf(false)
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -222,6 +225,13 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_SHOW_PASSWORD_DIALOG, false) == true) {
             showPasswordDialog.value = true
+        }
+
+        // Check if this is a Home button press (ACTION_MAIN with CATEGORY_HOME)
+        if (intent?.action == Intent.ACTION_MAIN &&
+            intent.categories?.contains(Intent.CATEGORY_HOME) == true) {
+            Log.i("MainActivity", "Home button pressed - resetting navigation to launcher")
+            shouldResetToLauncher.value = true
         }
     }
 

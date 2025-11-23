@@ -1,6 +1,8 @@
 package com.warehouse.kiosk.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -10,6 +12,7 @@ import com.warehouse.kiosk.presentation.auto_start.AutoStartScreen
 import com.warehouse.kiosk.presentation.kiosk_settings.KioskSettingsScreen
 import com.warehouse.kiosk.presentation.launcher.LauncherScreen
 import com.warehouse.kiosk.presentation.wms_install.WmsInstallScreen
+import com.warehouse.kiosk.shouldResetToLauncher
 
 object AppDestinations {
     const val LAUNCHER_ROUTE = "launcher"
@@ -23,6 +26,16 @@ object AppDestinations {
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val shouldReset by shouldResetToLauncher
+
+    // Observe the shouldResetToLauncher state and navigate back when it changes
+    LaunchedEffect(shouldReset) {
+        if (shouldReset) {
+            navController.popBackStack(AppDestinations.LAUNCHER_ROUTE, inclusive = false)
+            shouldResetToLauncher.value = false // Reset the flag
+        }
+    }
+
     NavHost(navController = navController, startDestination = AppDestinations.LAUNCHER_ROUTE) {
         composable(AppDestinations.LAUNCHER_ROUTE) {
             LauncherScreen(
@@ -32,7 +45,9 @@ fun AppNavigation() {
 
         composable(AppDestinations.ADMIN_ROUTE) {
             AdminScreen(
-                onNavigateUp = { navController.navigateUp() },
+                onNavigateUp = {
+                    navController.popBackStack(AppDestinations.LAUNCHER_ROUTE, inclusive = false)
+                },
                 onNavigateToAppSelection = { navController.navigate(AppDestinations.APP_SELECTION_ROUTE) },
                 onNavigateToKioskSettings = { navController.navigate(AppDestinations.KIOSK_SETTINGS_ROUTE) },
                 onNavigateToAutoStart = { navController.navigate(AppDestinations.AUTO_START_ROUTE) },
