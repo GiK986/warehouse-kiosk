@@ -28,6 +28,9 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- Понякога нужно за сканиране -->
 
+    <!-- INTERNET PERMISSION за download на APK файлове -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".KioskApplication"
         android:allowBackup="true"
@@ -100,6 +103,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- Install Status Receiver за APK silent install -->
+        <receiver
+            android:name=".services.InstallStatusReceiver"
+            android:exported="false">
+        </receiver>
 
     </application>
 

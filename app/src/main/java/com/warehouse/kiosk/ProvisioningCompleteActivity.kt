@@ -8,6 +8,11 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.warehouse.kiosk.data.repository.ApkRepository
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -47,11 +52,15 @@ import org.json.JSONObject
  * ВАЖНО: НЕ задаваме kiosk policies тук!
  * MainActivity ще ги зададе след като Setup Wizard завърши.
  */
+@AndroidEntryPoint
 class ProvisioningCompleteActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "ProvisioningComplete"
     }
+
+    @Inject
+    lateinit var apkRepository: ApkRepository
 
     // Data classes за резултатите
     data class ProvisioningStep(
@@ -124,11 +133,85 @@ class ProvisioningCompleteActivity : ComponentActivity() {
         // 3. Save provisioning status
         steps.add(saveProvisioningStatusWithResult())
 
+        // 4. WMS APK install (async в background)
+        val wmsApkUrl = extras?.getString("wms_apk_url")
+        val wmsInstallStep: MutableState<ProvisioningStep?> = mutableStateOf(null)
+
+        if (!wmsApkUrl.isNullOrBlank()) {
+            Log.i(TAG, "WMS APK URL found: $wmsApkUrl")
+            wmsInstallStep.value = ProvisioningStep(
+                name = "WMS приложение",
+                status = StepStatus.WARNING,
+                message = "Изтегляне...",
+                icon = Icons.Default.Download
+            )
+
+            // Стартираме download/install асинхронно
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    // Download
+                    val apkFile = apkRepository.downloadApk(wmsApkUrl)
+
+                    withContext(Dispatchers.Main) {
+                        wmsInstallStep.value = ProvisioningStep(
+                            name = "WMS приложение",
+                            status = StepStatus.WARNING,
+                            message = "Инсталиране...",
+                            icon = Icons.Default.Download
+                        )
+                    }
+
+                    // Install
+                    val success = apkRepository.installApk(apkFile)
+
+                    // Cleanup
+                    apkRepository.cleanupApkFile(apkFile)
+
+                    withContext(Dispatchers.Main) {
+                        wmsInstallStep.value = if (success) {
+                            ProvisioningStep(
+                                name = "WMS приложение",
+                                status = StepStatus.SUCCESS,
+                                message = "Инсталирано успешно",
+                                icon = Icons.Default.Download
+                            )
+                        } else {
+                            ProvisioningStep(
+                                name = "WMS приложение",
+                                status = StepStatus.FAILED,
+                                message = "Грешка при инсталация",
+                                icon = Icons.Default.Download
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to install WMS APK", e)
+                    withContext(Dispatchers.Main) {
+                        wmsInstallStep.value = ProvisioningStep(
+                            name = "WMS приложение",
+                            status = StepStatus.FAILED,
+                            message = e.message ?: "Грешка",
+                            icon = Icons.Default.Download
+                        )
+                    }
+                }
+            }
+        } else {
+            Log.d(TAG, "No WMS APK URL in provisioning extras")
+            wmsInstallStep.value = ProvisioningStep(
+                name = "WMS приложение",
+                status = StepStatus.SKIPPED,
+                message = "Няма URL за изтегляне",
+                icon = Icons.Default.Download
+            )
+        }
+
         // Показване на UI с резултатите
         setContent {
             MaterialTheme {
                 ProvisioningSuccessScreen(
                     steps = steps,
+                    wmsInstallStep = wmsInstallStep.value,
                     onContinue = { proceedToMainActivity() }
                 )
             }
@@ -138,6 +221,7 @@ class ProvisioningCompleteActivity : ComponentActivity() {
     @Composable
     private fun ProvisioningSuccessScreen(
         steps: List<ProvisioningStep>,
+        wmsInstallStep: ProvisioningStep?,
         onContinue: () -> Unit
     ) {
         Surface(
@@ -189,12 +273,17 @@ class ProvisioningCompleteActivity : ComponentActivity() {
                     Column(modifier = Modifier.padding(16.dp)) {
                         steps.forEachIndexed { index, step ->
                             ProvisioningStepRow(step)
-                            if (index < steps.size - 1) {
+                            if (index < steps.size - 1 || wmsInstallStep != null) {
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                                 )
                             }
+                        }
+
+                        // WMS Install step (динамичен)
+                        if (wmsInstallStep != null) {
+                            ProvisioningStepRow(wmsInstallStep)
                         }
                     }
                 }

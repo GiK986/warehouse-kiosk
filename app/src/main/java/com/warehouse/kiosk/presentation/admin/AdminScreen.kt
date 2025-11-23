@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,7 +41,8 @@ fun AdminScreen(
     onNavigateUp: () -> Unit,
     onNavigateToAppSelection: () -> Unit,
     onNavigateToKioskSettings: () -> Unit,
-    onNavigateToAutoStart: () -> Unit
+    onNavigateToAutoStart: () -> Unit,
+    onNavigateToWmsInstall: () -> Unit
 ) {
     val context = LocalContext.current
     val isKioskModeActive by viewModel.isKioskModeActive.collectAsStateWithLifecycle()
@@ -98,6 +100,14 @@ fun AdminScreen(
                     subtitle = autoStartAppName,
                     icon = Icons.Default.PlayArrow,
                     onClick = onNavigateToAutoStart
+                )
+            }
+            item {
+                SettingsItem(
+                    title = "Install WMS App",
+                    subtitle = "Download and install WMS application",
+                    icon = Icons.Default.Download,
+                    onClick = onNavigateToWmsInstall
                 )
             }
         }

@@ -9,6 +9,7 @@ import com.warehouse.kiosk.presentation.app_selection.AppSelectionScreen
 import com.warehouse.kiosk.presentation.auto_start.AutoStartScreen
 import com.warehouse.kiosk.presentation.kiosk_settings.KioskSettingsScreen
 import com.warehouse.kiosk.presentation.launcher.LauncherScreen
+import com.warehouse.kiosk.presentation.wms_install.WmsInstallScreen
 
 object AppDestinations {
     const val LAUNCHER_ROUTE = "launcher"
@@ -16,6 +17,7 @@ object AppDestinations {
     const val APP_SELECTION_ROUTE = "app_selection"
     const val KIOSK_SETTINGS_ROUTE = "kiosk_settings"
     const val AUTO_START_ROUTE = "auto_start"
+    const val WMS_INSTALL_ROUTE = "wms_install"
 }
 
 @Composable
@@ -33,7 +35,8 @@ fun AppNavigation() {
                 onNavigateUp = { navController.navigateUp() },
                 onNavigateToAppSelection = { navController.navigate(AppDestinations.APP_SELECTION_ROUTE) },
                 onNavigateToKioskSettings = { navController.navigate(AppDestinations.KIOSK_SETTINGS_ROUTE) },
-                onNavigateToAutoStart = { navController.navigate(AppDestinations.AUTO_START_ROUTE) }
+                onNavigateToAutoStart = { navController.navigate(AppDestinations.AUTO_START_ROUTE) },
+                onNavigateToWmsInstall = { navController.navigate(AppDestinations.WMS_INSTALL_ROUTE) }
             )
         }
 
@@ -51,6 +54,12 @@ fun AppNavigation() {
 
         composable(AppDestinations.AUTO_START_ROUTE) {
             AutoStartScreen(
+                onNavigateUp = { navController.navigateUp() }
+            )
+        }
+
+        composable(AppDestinations.WMS_INSTALL_ROUTE) {
+            WmsInstallScreen(
                 onNavigateUp = { navController.navigateUp() }
             )
         }
