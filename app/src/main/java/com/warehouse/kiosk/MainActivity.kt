@@ -109,14 +109,17 @@ class MainActivity : ComponentActivity() {
                         Log.i("MainActivity", "  Activating kiosk mode")
                         repository.setKioskModeActive(true)
                     }
-
-                    // Start observing kiosk mode changes
-                    observeKioskMode()
                 } else {
                     Log.i("MainActivity", "✗ Skipping kiosk setup")
                     Log.i("MainActivity", "  Reason: Setup completed AND kiosk mode not active")
                     Log.i("MainActivity", "  This happens after 'Exit Kiosk Mode'")
                 }
+
+                // ВАЖНО: observeKioskMode() трябва ВИНАГИ да работи!
+                // Това позволява kiosk mode да се включва/изключва динамично
+                // без да се налага restart на устройството
+                Log.i("MainActivity", "Starting kiosk mode observer...")
+                observeKioskMode()
             }
         } else {
             Log.w("MainActivity", "We are NOT Device Owner - kiosk policies will NOT be set")
