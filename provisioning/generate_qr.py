@@ -292,11 +292,13 @@ class QRGenerator:
                 sys.exit(1)
 
             location_wifi_data = self.wifi_profiles["profiles"][location_wifi_id]
-            location_wifi = {
+            location_wifi_json = {
                 "wifi_ssid": location_wifi_data["android.app.extra.PROVISIONING_WIFI_SSID"],
                 "wifi_password": location_wifi_data["android.app.extra.PROVISIONING_WIFI_PASSWORD"],
                 "wifi_security_type": location_wifi_data["android.app.extra.PROVISIONING_WIFI_SECURITY_TYPE"]
             }
+            location_wifi = json.dumps(location_wifi_json)
+
 
         # Добавя локационни данни в admin extras
         admin_extras = {

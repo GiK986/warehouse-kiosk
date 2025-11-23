@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiNetworkSuggestion
 import android.os.Build
+import android.os.PersistableBundle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -82,7 +83,7 @@ class ProvisioningCompleteActivity : ComponentActivity() {
 
         if (!isDeviceOwner) {
             Log.e(TAG, "App is NOT Device Owner! Provisioning may have failed.")
-            showErrorAndFinish("Приложението не е Device Owner")
+            showErrorAndFinish()
             return
         }
 
@@ -90,9 +91,24 @@ class ProvisioningCompleteActivity : ComponentActivity() {
         Log.i(TAG, "Device Owner confirmed! Provisioning completed successfully.")
 
         // Прочитане на provisioning extras
-        val extras = intent.getBundleExtra("android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE")
+        val extras: PersistableBundle? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Този ред е валиден само за Android 13+ (API 33)
+            intent.getParcelableExtra(
+                DevicePolicyManager.EXTRA_PROVISIONING_ADMIN_EXTRAS_BUNDLE,
+                PersistableBundle::class.java
+            )
+        } else {
+            // За Android 12 и по-стари ползваме стария метод
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(
+                DevicePolicyManager.EXTRA_PROVISIONING_ADMIN_EXTRAS_BUNDLE
+            ) as? PersistableBundle
+        }
         if (extras != null) {
             Log.d(TAG, "Provisioning extras received: ${extras.keySet()}")
+        }
+        else {
+            Log.d(TAG, "Provisioning extras not received")
         }
 
         // Изпълняване на provisioning стъпки и събиране на резултати
@@ -101,9 +117,9 @@ class ProvisioningCompleteActivity : ComponentActivity() {
         // 1. Set as Default Launcher
         steps.add(setAsDefaultLauncher(dpm, adminComponent))
 
-        // 2. Configure WiFi
-        val wifiDataString = extras?.getString("location_wifi")
-        steps.add(configureLocationWifi(wifiDataString))
+        // 2. Configure WiFi - може да дойде като PersistableBundle ИЛИ като JSON string
+        val wifiConfig = extractWifiConfig(extras)
+        steps.add(configureLocationWifi(wifiConfig))
 
         // 3. Save provisioning status
         steps.add(saveProvisioningStatusWithResult())
@@ -260,6 +276,43 @@ class ProvisioningCompleteActivity : ComponentActivity() {
     }
 
     /**
+     * Извлича WiFi конфигурацията от admin extras.
+     * Поддържа ДВА формата:
+     * 1. PersistableBundle (nested object в QR code) - ИДЕАЛНО
+     * 2. JSON String (workaround когато QR generator го serialized)
+     */
+    private fun extractWifiConfig(extras: PersistableBundle?): PersistableBundle? {
+        if (extras == null) return null
+
+        // Опит 1: Nested PersistableBundle (правилният формат)
+        val bundleWifi = extras.getPersistableBundle("location_wifi")
+        if (bundleWifi != null) {
+            Log.d(TAG, "WiFi config found as PersistableBundle")
+            return bundleWifi
+        }
+
+        // Опит 2: JSON String (fallback ако е serialized)
+        val jsonString = extras.getString("location_wifi")
+        if (!jsonString.isNullOrEmpty()) {
+            Log.d(TAG, "WiFi config found as JSON string, parsing...")
+            return try {
+                val json = JSONObject(jsonString)
+                PersistableBundle().apply {
+                    putString("wifi_ssid", json.optString("wifi_ssid"))
+                    putString("wifi_password", json.optString("wifi_password"))
+                    putString("wifi_security_type", json.optString("wifi_security_type"))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to parse WiFi JSON string", e)
+                null
+            }
+        }
+
+        Log.d(TAG, "No WiFi config found in admin extras")
+        return null
+    }
+
+    /**
      * Прави това приложение HOME (Launcher) за устройството.
      */
     private fun setAsDefaultLauncher(
@@ -295,9 +348,10 @@ class ProvisioningCompleteActivity : ComponentActivity() {
 
     /**
      * Конфигурира допълнителна WiFi мрежа ако е зададена в provisioning extras.
+     * ВАЖНО: location_wifi идва като nested PersistableBundle от QR code JSON!
      */
-    private fun configureLocationWifi(wifiJsonString: String?): ProvisioningStep {
-        if (wifiJsonString.isNullOrEmpty()) {
+    private fun configureLocationWifi(wifiBundle: PersistableBundle?): ProvisioningStep {
+        if (wifiBundle == null) {
             return ProvisioningStep(
                 name = "WiFi мрежа",
                 status = StepStatus.SKIPPED,
@@ -307,10 +361,12 @@ class ProvisioningCompleteActivity : ComponentActivity() {
         }
 
         return try {
-            val json = JSONObject(wifiJsonString)
-            val ssid = json.optString("wifi_ssid")
-            val password = json.optString("wifi_password")
-            val securityType = json.optString("wifi_security_type")
+            // Извличаме данните от PersistableBundle (не от JSON!)
+            val ssid = wifiBundle.getString("wifi_ssid") ?: ""
+            val password = wifiBundle.getString("wifi_password") ?: ""
+            val securityType = wifiBundle.getString("wifi_security_type") ?: "WPA"
+
+            Log.d(TAG, "WiFi config from bundle: SSID=$ssid, Security=$securityType")
 
             if (ssid.isEmpty()) {
                 return ProvisioningStep(
@@ -419,7 +475,8 @@ class ProvisioningCompleteActivity : ComponentActivity() {
     /**
      * Показване на грешка и затваряне на activity
      */
-    private fun showErrorAndFinish(errorMessage: String) {
+    private fun showErrorAndFinish() {
+        val errorMessage = "Приложението не е Device Owner"
         Log.e(TAG, "Error: $errorMessage")
 
         setContent {
