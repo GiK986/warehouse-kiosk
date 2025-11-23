@@ -282,11 +282,29 @@ class QRGenerator:
             payload["android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION"] = apk_url
             print(f"🌐 APK URL: {apk_url}")
 
+        # добавя location_wifi за локацията ако е зададено
+        location_wifi = None
+        location_wifi_id = location.get("location_wifi", None)
+        if location_wifi_id:
+            if location_wifi_id not in self.wifi_profiles["profiles"]:
+                print(f"❌ WiFi профил '{location_wifi_id}' не съществува!")
+                self.list_wifi_profiles()
+                sys.exit(1)
+
+            location_wifi_data = self.wifi_profiles["profiles"][location_wifi_id]
+            location_wifi = {
+                "wifi_ssid": location_wifi_data["android.app.extra.PROVISIONING_WIFI_SSID"],
+                "wifi_password": location_wifi_data["android.app.extra.PROVISIONING_WIFI_PASSWORD"],
+                "wifi_security_type": location_wifi_data["android.app.extra.PROVISIONING_WIFI_SECURITY_TYPE"]
+            }
+
         # Добавя локационни данни в admin extras
         admin_extras = {
             "warehouse_id": location["warehouse_id"],
             "wms_apk_url": location.get("wms_apk_url", ""),
-            "location_name": location["name"]
+            "location_name": location["name"],
+            "location_wifi": location_wifi
+
         }
 
         payload["android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE"] = admin_extras

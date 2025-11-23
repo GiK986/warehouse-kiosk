@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -20,32 +21,51 @@ import androidx.lifecycle.lifecycleScope
 import com.warehouse.kiosk.services.DeviceOwnerReceiver
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-//import java.util.concurrent.atomic.AtomicBoolean
+import android.net.wifi.WifiManager
+import android.net.wifi.WifiNetworkSuggestion
+import android.os.Build
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.vector.ImageVector
+import org.json.JSONObject
 
 /**
- * РАЗШИРЕНА версия на ProvisioningCompleteActivity
+ * ProvisioningCompleteActivity
  *
  * Тази activity се стартира след успешен Device Owner provisioning
  * (когато Android изпрати ADMIN_POLICY_COMPLIANCE Intent).
  *
  * ЗАДАЧИ:
  * 1. Проверка дали сме Device Owner
- * 2. Активиране на системни приложения (Gboard, Chrome)
- * 3. Настройка като Default Launcher (Home app)
- * 4. Конфигуриране на System UI бутони (Home, Global Actions)
- * 5. Подготовка за Kiosk режим (Lock Task)
- * 6. Показване на потвърдително съобщение
- * 7. Стартиране на MainActivity
+ * 2. Настройка като Default Launcher (Home app)
+ * 3. Конфигуриране на допълнителна WiFi мрежа (ако има)
+ * 4. Запазване на provisioning статус
+ * 5. Показване на резултатите
+ * 6. Finish() за да продължи Setup Wizard
+ *
+ * ВАЖНО: НЕ задаваме kiosk policies тук!
+ * MainActivity ще ги зададе след като Setup Wizard завърши.
  */
 class ProvisioningCompleteActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "ProvisioningComplete"
-        private const val AUTO_START_DELAY_MS = 2000L // 2 секунди
     }
 
-    // Флаг за предотвратяване на двойна навигация
-    // private val isNavigating = AtomicBoolean(false)
+    // Data classes за резултатите
+    data class ProvisioningStep(
+        val name: String,
+        val status: StepStatus,
+        val message: String = "",
+        val icon: ImageVector
+    )
+
+    enum class StepStatus {
+        SUCCESS,
+        WARNING,
+        FAILED,
+        SKIPPED
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,52 +86,44 @@ class ProvisioningCompleteActivity : ComponentActivity() {
             return
         }
 
-        // Device Owner е потвърден - конфигуриране на устройството
+        // Device Owner е потвърден
         Log.i(TAG, "Device Owner confirmed! Provisioning completed successfully.")
 
-        // Опционално: Прочитане на provisioning extras (ако има)
+        // Прочитане на provisioning extras
         val extras = intent.getBundleExtra("android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE")
         if (extras != null) {
             Log.d(TAG, "Provisioning extras received: ${extras.keySet()}")
         }
 
-        // 1. ВАЖНО: Активиране на системни приложения (напр. Клавиатура)
-        // При QR provisioning клавиатурата често е деактивирана по подразбиране.
-        enableSystemApps(dpm, adminComponent)
+        // Изпълняване на provisioning стъпки и събиране на резултати
+        val steps = mutableListOf<ProvisioningStep>()
 
-        // 2. ВАЖНО: Настройка като Default Launcher (Home app)
-        // Това кара Android да стартира MainActivity веднага след boot
-        // и прави така, че Home бутонът да връща в твоето приложение.
-        setAsDefaultLauncher(dpm, adminComponent)
+        // 1. Set as Default Launcher
+        steps.add(setAsDefaultLauncher(dpm, adminComponent))
 
-        // 3. ВАЖНО: Конфигуриране на System UI бутони (Home, Global Actions)
-        // Това оправя проблема със "сив Home бутон" в Lock Task режим
-        configureSystemButtons(dpm, adminComponent)
+        // 2. Configure WiFi
+        val wifiDataString = extras?.getString("location_wifi")
+        steps.add(configureLocationWifi(wifiDataString))
 
-        // 4. Подготовка за Kiosk режим (Lock Task)
-//        setupKioskPolicies(dpm, adminComponent)
+        // 3. Save provisioning status
+        steps.add(saveProvisioningStatusWithResult())
 
-        // Запазване на provisioning статус
-        saveProvisioningStatus()
-
-        // Показване на UI
+        // Показване на UI с резултатите
         setContent {
             MaterialTheme {
                 ProvisioningSuccessScreen(
-                    onContinue = { finishAndStartMain() }
+                    steps = steps,
+                    onContinue = { proceedToMainActivity() }
                 )
             }
         }
-
-//        // Auto-start след 3 секунди
-//        lifecycleScope.launch {
-//            delay(AUTO_START_DELAY_MS)
-//            finishAndStartMain()
-//        }
     }
 
     @Composable
-    private fun ProvisioningSuccessScreen(onContinue: () -> Unit) {
+    private fun ProvisioningSuccessScreen(
+        steps: List<ProvisioningStep>,
+        onContinue: () -> Unit
+    ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
@@ -123,7 +135,7 @@ class ProvisioningCompleteActivity : ComponentActivity() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Success icon/text
+                // Success header
                 Text(
                     text = "✓",
                     style = MaterialTheme.typography.displayLarge,
@@ -131,17 +143,16 @@ class ProvisioningCompleteActivity : ComponentActivity() {
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Success message
                 Text(
-                    text = "Устройството е настроено успешно!",
+                    text = "Устройството е настроено!",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = "Device Owner режим е активиран",
@@ -150,25 +161,32 @@ class ProvisioningCompleteActivity : ComponentActivity() {
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-                // Auto-start indicator
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+                // Списък със стъпките
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Стартиране на приложението...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        steps.forEachIndexed { index, step ->
+                            ProvisioningStepRow(step)
+                            if (index < steps.size - 1) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 12.dp),
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
+
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Manual continue button
                 Button(
@@ -181,11 +199,188 @@ class ProvisioningCompleteActivity : ComponentActivity() {
         }
     }
 
+    @Composable
+    private fun ProvisioningStepRow(step: ProvisioningStep) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = step.icon,
+                    contentDescription = null,
+                    tint = when (step.status) {
+                        StepStatus.SUCCESS -> Color(0xFF4CAF50)
+                        StepStatus.WARNING -> Color(0xFFFF9800)
+                        StepStatus.FAILED -> Color(0xFFF44336)
+                        StepStatus.SKIPPED -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    },
+                    modifier = Modifier.size(24.dp)
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = step.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    if (step.message.isNotEmpty()) {
+                        Text(
+                            text = step.message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Icon(
+                imageVector = when (step.status) {
+                    StepStatus.SUCCESS -> Icons.Default.CheckCircle
+                    StepStatus.WARNING -> Icons.Default.Warning
+                    StepStatus.FAILED -> Icons.Default.Error
+                    StepStatus.SKIPPED -> Icons.Default.Remove
+                },
+                contentDescription = null,
+                tint = when (step.status) {
+                    StepStatus.SUCCESS -> Color(0xFF4CAF50)
+                    StepStatus.WARNING -> Color(0xFFFF9800)
+                    StepStatus.FAILED -> Color(0xFFF44336)
+                    StepStatus.SKIPPED -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                },
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+
     /**
-     * Запазване на provisioning статус в SharedPreferences
+     * Прави това приложение HOME (Launcher) за устройството.
      */
-    private fun saveProvisioningStatus() {
-        try {
+    private fun setAsDefaultLauncher(
+        dpm: DevicePolicyManager,
+        adminComponent: ComponentName
+    ): ProvisioningStep {
+        return try {
+            val filter = IntentFilter(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                addCategory(Intent.CATEGORY_DEFAULT)
+            }
+
+            val activityComponent = ComponentName(this, MainActivity::class.java)
+            dpm.addPersistentPreferredActivity(adminComponent, filter, activityComponent)
+
+            Log.i(TAG, "Application set as Default Launcher successfully")
+            ProvisioningStep(
+                name = "Default Launcher",
+                status = StepStatus.SUCCESS,
+                message = "Приложението е Home екран",
+                icon = Icons.Default.Home
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set as Default Launcher", e)
+            ProvisioningStep(
+                name = "Default Launcher",
+                status = StepStatus.FAILED,
+                message = e.message ?: "Грешка при настройка",
+                icon = Icons.Default.Home
+            )
+        }
+    }
+
+    /**
+     * Конфигурира допълнителна WiFi мрежа ако е зададена в provisioning extras.
+     */
+    private fun configureLocationWifi(wifiJsonString: String?): ProvisioningStep {
+        if (wifiJsonString.isNullOrEmpty()) {
+            return ProvisioningStep(
+                name = "WiFi мрежа",
+                status = StepStatus.SKIPPED,
+                message = "Няма допълнителна мрежа",
+                icon = Icons.Default.WifiOff
+            )
+        }
+
+        return try {
+            val json = JSONObject(wifiJsonString)
+            val ssid = json.optString("wifi_ssid")
+            val password = json.optString("wifi_password")
+            val securityType = json.optString("wifi_security_type")
+
+            if (ssid.isEmpty()) {
+                return ProvisioningStep(
+                    name = "WiFi мрежа",
+                    status = StepStatus.SKIPPED,
+                    message = "Липсва SSID",
+                    icon = Icons.Default.WifiOff
+                )
+            }
+
+            val wifiManager = getSystemService(WIFI_SERVICE) as WifiManager
+            val suggestionBuilder = WifiNetworkSuggestion.Builder()
+                .setSsid(ssid)
+                .setIsAppInteractionRequired(false)
+
+            when (securityType.uppercase()) {
+                "WPA", "WPA2" -> suggestionBuilder.setWpa2Passphrase(password)
+                "WPA3", "SAE" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        suggestionBuilder.setWpa3Passphrase(password)
+                    } else {
+                        return ProvisioningStep(
+                            name = "WiFi мрежа",
+                            status = StepStatus.WARNING,
+                            message = "WPA3 изисква Android 10+",
+                            icon = Icons.Default.Wifi
+                        )
+                    }
+                }
+                "NONE" -> {
+                    // Отворена мрежа
+                }
+            }
+
+            val suggestion = suggestionBuilder.build()
+            val status = wifiManager.addNetworkSuggestions(listOf(suggestion))
+
+            if (status == WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS) {
+                Log.i(TAG, "WiFi network $ssid added successfully")
+                ProvisioningStep(
+                    name = "WiFi мрежа",
+                    status = StepStatus.SUCCESS,
+                    message = "Добавена: $ssid",
+                    icon = Icons.Default.Wifi
+                )
+            } else {
+                Log.e(TAG, "Failed to add WiFi network. Status: $status")
+                ProvisioningStep(
+                    name = "WiFi мрежа",
+                    status = StepStatus.WARNING,
+                    message = "Код на грешка: $status",
+                    icon = Icons.Default.Wifi
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error configuring WiFi", e)
+            ProvisioningStep(
+                name = "WiFi мрежа",
+                status = StepStatus.FAILED,
+                message = e.message ?: "Грешка при конфигурация",
+                icon = Icons.Default.Wifi
+            )
+        }
+    }
+
+    /**
+     * Запазване на provisioning статус в SharedPreferences.
+     */
+    private fun saveProvisioningStatusWithResult(): ProvisioningStep {
+        return try {
             val prefs = getSharedPreferences("kiosk_config", MODE_PRIVATE)
             prefs.edit().apply {
                 putBoolean("is_provisioned", true)
@@ -194,33 +389,31 @@ class ProvisioningCompleteActivity : ComponentActivity() {
                 apply()
             }
             Log.d(TAG, "Provisioning status saved")
+            ProvisioningStep(
+                name = "Provisioning статус",
+                status = StepStatus.SUCCESS,
+                message = "Запазен успешно",
+                icon = Icons.Default.Save
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save provisioning status", e)
+            ProvisioningStep(
+                name = "Provisioning статус",
+                status = StepStatus.WARNING,
+                message = "Грешка при запазване",
+                icon = Icons.Default.Save
+            )
         }
     }
 
     /**
-     * Стартиране на MainActivity и затваряне на тази activity
+     * Finish() и позволи на Setup Wizard да продължи.
+     * MainActivity ще се стартира автоматично след като Setup Wizard завърши.
      */
-    private fun finishAndStartMain() {
-        try {
-            Log.d(TAG, "Starting MainActivity")
-
-            setResult(RESULT_OK)
-
-//            val intent = Intent(this, MainActivity::class.java).apply {
-//                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-//                putExtra("from_provisioning", true)
-//            }
-
-//            startActivity(intent)
-            finish()
-
-            Log.i(TAG, "MainActivity started, ProvisioningCompleteActivity finished")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start MainActivity", e)
-            showErrorAndFinish("Грешка при стартиране на приложението")
-        }
+    private fun proceedToMainActivity() {
+        setResult(RESULT_OK)
+        finish()
+        Log.i(TAG, "ProvisioningCompleteActivity finished")
     }
 
     /**
@@ -265,87 +458,8 @@ class ProvisioningCompleteActivity : ComponentActivity() {
         // Auto-close след 5 секунди
         lifecycleScope.launch {
             delay(5000)
+            setResult(RESULT_CANCELED)
             finish()
-        }
-    }
-
-    /**
-     * Разрешава системни приложения, които може да са скрити след provisioning.
-     * Това е критично за клавиатурата (Gboard, Samsung Keyboard и др.)
-     */
-    private fun enableSystemApps(dpm: DevicePolicyManager, adminComponent: ComponentName) {
-        try {
-            // Този метод активира всички системни UI елементи, които може да са били спрени
-            dpm.enableSystemApp(adminComponent, "com.google.android.inputmethod.latin") // Gboard
-            dpm.enableSystemApp(adminComponent, "com.android.chrome") // WebView/Chrome
-            // Можеш да добавиш и други специфични пакети за твоето устройство:
-            // dpm.enableSystemApp(adminComponent, "com.samsung.android.honeyboard") // Samsung клавиатура
-            Log.i(TAG, "System apps enabled successfully")
-        } catch (e: Exception) {
-            // Не е фатално, но е добре да се логне
-            Log.w(TAG, "Could not enable some system apps: ${e.message}")
-        }
-    }
-
-    /**
-     * Прави това приложение HOME (Launcher) за устройството.
-     * След това Home бутонът ще стартира MainActivity.
-     */
-    private fun setAsDefaultLauncher(dpm: DevicePolicyManager, adminComponent: ComponentName) {
-        try {
-            val filter = IntentFilter(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_HOME)
-                addCategory(Intent.CATEGORY_DEFAULT)
-            }
-
-            // Указваме, че MainActivity е новият Home екран
-            val activityComponent = ComponentName(this, MainActivity::class.java)
-
-            dpm.addPersistentPreferredActivity(adminComponent, filter, activityComponent)
-
-            Log.i(TAG, "Application set as Default Launcher successfully")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to set as Default Launcher", e)
-        }
-    }
-
-    /**
-     * Управлява системните бутони (Home, Overview, Notifications)
-     * КРИТИЧНО: Това оправя проблема със "сив Home бутон" в Lock Task режим!
-     */
-    private fun configureSystemButtons(dpm: DevicePolicyManager, adminComponent: ComponentName) {
-        try {
-            // ВАЖНО: Тези флагове определят какво работи, когато си в Kiosk (startLockTask)
-
-            // LOCK_TASK_FEATURE_HOME -> Home бутонът работи (не е сив)
-            // LOCK_TASK_FEATURE_GLOBAL_ACTIONS -> Power менюто работи (при задържане на Power)
-            // LOCK_TASK_FEATURE_NOTIFICATIONS -> Можеш да дърпаш щората (опционално)
-            // LOCK_TASK_FEATURE_OVERVIEW -> Recents бутонът (обикновено не се слага за Kiosk)
-
-            val flags = DevicePolicyManager.LOCK_TASK_FEATURE_HOME or
-                    DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS or
-                    DevicePolicyManager.LOCK_TASK_FEATURE_OVERVIEW    // разкоментирай ако искаш мултитаскинг
-            // or DevicePolicyManager.LOCK_TASK_FEATURE_NOTIFICATIONS // разкоментирай ако искаш щора
-
-            dpm.setLockTaskFeatures(adminComponent, flags)
-
-            Log.i(TAG, "System buttons configured. Flags: $flags")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to configure LockTask features", e)
-        }
-    }
-
-    /**
-     * Подготвя устройството за Kiosk режим (Lock Task).
-     * Разрешава на това приложение да използва Lock Task mode.
-     */
-    private fun setupKioskPolicies(dpm: DevicePolicyManager, adminComponent: ComponentName) {
-        try {
-            // Разрешаваме на нашето приложение да ползва LockTask (Kiosk) режим
-            dpm.setLockTaskPackages(adminComponent, arrayOf(packageName))
-            Log.i(TAG, "LockTask packages set for: $packageName")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to set LockTask packages", e)
         }
     }
 }

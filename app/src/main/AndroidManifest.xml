@@ -23,6 +23,11 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />
 
+    <!--  ДОПЪЛНИТЕЛНИ PERMISSIONS  WIFI -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- Понякога нужно за сканиране -->
+
     <application
         android:name=".KioskApplication"
         android:allowBackup="true"
