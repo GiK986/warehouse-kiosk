@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.warehouse.kiosk.data.repository.ApkRepository
+import com.warehouse.kiosk.data.repository.KioskRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -61,6 +62,9 @@ class ProvisioningCompleteActivity : ComponentActivity() {
 
     @Inject
     lateinit var apkRepository: ApkRepository
+
+    @Inject
+    lateinit var kioskRepository: KioskRepository
 
     // Data classes за резултатите
     data class ProvisioningStep(
@@ -130,7 +134,11 @@ class ProvisioningCompleteActivity : ComponentActivity() {
         val wifiConfig = extractWifiConfig(extras)
         steps.add(configureLocationWifi(wifiConfig))
 
-        // 3. Save provisioning status
+        // 3. Save location name from provisioning extras
+        val locationName = extras?.getString("location_name")
+        steps.add(saveLocationName(locationName))
+
+        // 4. Save provisioning status
         steps.add(saveProvisioningStatusWithResult())
 
         // 4. WMS APK install (async в background)
@@ -517,6 +525,44 @@ class ProvisioningCompleteActivity : ComponentActivity() {
                 status = StepStatus.FAILED,
                 message = e.message ?: "Грешка при конфигурация",
                 icon = Icons.Default.Wifi
+            )
+        }
+    }
+
+    /**
+     * Запазване на location name от provisioning extras в DataStore.
+     */
+    private fun saveLocationName(locationName: String?): ProvisioningStep {
+        if (locationName.isNullOrBlank()) {
+            Log.d(TAG, "No location_name in provisioning extras")
+            return ProvisioningStep(
+                name = "Локация",
+                status = StepStatus.SKIPPED,
+                message = "Не е указана",
+                icon = Icons.Default.LocationOn
+            )
+        }
+
+        return try {
+            // Запазваме асинхронно в background
+            lifecycleScope.launch(Dispatchers.IO) {
+                kioskRepository.setLocationName(locationName)
+            }
+
+            Log.i(TAG, "Location name saved: $locationName")
+            ProvisioningStep(
+                name = "Локация",
+                status = StepStatus.SUCCESS,
+                message = locationName,
+                icon = Icons.Default.LocationOn
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save location name", e)
+            ProvisioningStep(
+                name = "Локация",
+                status = StepStatus.WARNING,
+                message = "Грешка при запазване",
+                icon = Icons.Default.LocationOn
             )
         }
     }
