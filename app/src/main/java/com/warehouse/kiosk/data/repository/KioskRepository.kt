@@ -40,4 +40,12 @@ class KioskRepository @Inject constructor(
     val autoStartAppPackage: Flow<String?> = preferences.autoStartAppPackage
 
     suspend fun setAutoStartAppPackage(packageName: String?) = preferences.setAutoStartAppPackage(packageName)
+
+    val staffName: Flow<String> = preferences.staffName
+
+    suspend fun setStaffName(name: String) = preferences.setStaffName(name)
+
+    val locationName: Flow<String> = preferences.locationName
+
+    suspend fun setLocationName(location: String) = preferences.setLocationName(location)
 }

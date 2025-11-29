@@ -13,11 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,7 +43,8 @@ fun AdminScreen(
     onNavigateToAppSelection: () -> Unit,
     onNavigateToKioskSettings: () -> Unit,
     onNavigateToAutoStart: () -> Unit,
-    onNavigateToWmsInstall: () -> Unit
+    onNavigateToWmsInstall: () -> Unit,
+    onNavigateToDeviceInfo: () -> Unit
 ) {
     val context = LocalContext.current
     val isKioskModeActive by viewModel.isKioskModeActive.collectAsStateWithLifecycle()
@@ -76,6 +78,14 @@ fun AdminScreen(
                         }
                         context.startActivity(intent)
                     }
+                )
+            }
+            item {
+                SettingsItem(
+                    title = "Device Information",
+                    subtitle = "Configure staff name and location",
+                    icon = Icons.Default.Info,
+                    onClick = onNavigateToDeviceInfo
                 )
             }
             item {

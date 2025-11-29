@@ -19,6 +19,8 @@ class KioskPreferences @Inject constructor(private val dataStore: DataStore<Pref
         val INITIAL_SETUP_COMPLETED = booleanPreferencesKey("initial_setup_completed")
         val PASSWORD_HASH = stringPreferencesKey("password_hash")
         val AUTO_START_APP_PACKAGE = stringPreferencesKey("auto_start_app_package")
+        val STAFF_NAME = stringPreferencesKey("staff_name")
+        val LOCATION_NAME = stringPreferencesKey("location_name")
     }
 
     // Kiosk Mode Status
@@ -66,6 +68,28 @@ class KioskPreferences @Inject constructor(private val dataStore: DataStore<Pref
             } else {
                 it[PrefKeys.AUTO_START_APP_PACKAGE] = packageName
             }
+        }
+    }
+
+    // Staff Name
+    val staffName: Flow<String> = dataStore.data.map {
+        it[PrefKeys.STAFF_NAME] ?: ""
+    }
+
+    suspend fun setStaffName(name: String) {
+        dataStore.edit {
+            it[PrefKeys.STAFF_NAME] = name
+        }
+    }
+
+    // Location Name
+    val locationName: Flow<String> = dataStore.data.map {
+        it[PrefKeys.LOCATION_NAME] ?: ""
+    }
+
+    suspend fun setLocationName(location: String) {
+        dataStore.edit {
+            it[PrefKeys.LOCATION_NAME] = location
         }
     }
 

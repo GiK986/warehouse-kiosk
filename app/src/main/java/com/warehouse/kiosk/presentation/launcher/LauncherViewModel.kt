@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.warehouse.kiosk.data.repository.KioskRepository
+import com.warehouse.kiosk.domain.manager.DeviceOwnerManager
 import com.warehouse.kiosk.domain.usecase.GetInstalledAppsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,6 +22,7 @@ import javax.inject.Inject
 class LauncherViewModel @Inject constructor(
     private val repository: KioskRepository,
     private val getInstalledAppsUseCase: GetInstalledAppsUseCase,
+    private val deviceOwnerManager: DeviceOwnerManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -29,6 +31,20 @@ class LauncherViewModel @Inject constructor(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
+        )
+
+    val staffName = repository.staffName
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ""
+        )
+
+    val locationName = repository.locationName
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ""
         )
 
     init {
@@ -53,20 +69,41 @@ class LauncherViewModel @Inject constructor(
         }
     }
 
-    // 1. Създайте частен, променлив StateFlow, който ще държи състоянието.
+    // Password Dialog State
     private val _showPasswordDialog = MutableStateFlow(false)
-
-    // 2. Изложете го като публичен, неизменим StateFlow, който UI-ът ще наблюдава.
     val showPasswordDialog: StateFlow<Boolean> = _showPasswordDialog.asStateFlow()
 
-    // 3. Функция, която показва диалога (променя стойността на true).
     fun showPasswordDialog() {
         _showPasswordDialog.value = true
     }
 
-    // 4. Функция, която скрива диалога (променя стойността на false).
     fun hidePasswordDialog() {
         _showPasswordDialog.value = false
+    }
+
+    // Edit Staff Name Dialog State
+    private val _showEditStaffDialog = MutableStateFlow(false)
+    val showEditStaffDialog: StateFlow<Boolean> = _showEditStaffDialog.asStateFlow()
+
+    fun showEditStaffDialog() {
+        _showEditStaffDialog.value = true
+    }
+
+    fun hideEditStaffDialog() {
+        _showEditStaffDialog.value = false
+    }
+
+    // Update Staff Name and Lock Screen Info
+    fun updateStaffName(newName: String) {
+        viewModelScope.launch {
+            repository.setStaffName(newName)
+            try {
+                deviceOwnerManager.setLockScreenInfo(newName)
+            } catch (e: SecurityException) {
+                // Log if not Device Owner, but still save to preferences
+                android.util.Log.w("LauncherViewModel", "Cannot set lock screen info: ${e.message}")
+            }
+        }
     }
 
 }
