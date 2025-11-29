@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.warehouse.kiosk.presentation.admin.AdminScreen
 import com.warehouse.kiosk.presentation.app_selection.AppSelectionScreen
+import com.warehouse.kiosk.presentation.app_updates.AppUpdatesScreen
 import com.warehouse.kiosk.presentation.auto_start.AutoStartScreen
 import com.warehouse.kiosk.presentation.device_info.DeviceInfoScreen
 import com.warehouse.kiosk.presentation.kiosk_settings.KioskSettingsScreen
@@ -21,6 +22,7 @@ object AppDestinations {
     const val AUTO_START_ROUTE = "auto_start"
     const val WMS_INSTALL_ROUTE = "wms_install"
     const val DEVICE_INFO_ROUTE = "device_info"
+    const val APP_UPDATES_ROUTE = "app_updates"
 }
 
 @Composable
@@ -54,7 +56,8 @@ fun AppNavigation(
                 onNavigateToKioskSettings = { navController.navigate(AppDestinations.KIOSK_SETTINGS_ROUTE) },
                 onNavigateToAutoStart = { navController.navigate(AppDestinations.AUTO_START_ROUTE) },
                 onNavigateToWmsInstall = { navController.navigate(AppDestinations.WMS_INSTALL_ROUTE) },
-                onNavigateToDeviceInfo = { navController.navigate(AppDestinations.DEVICE_INFO_ROUTE) }
+                onNavigateToDeviceInfo = { navController.navigate(AppDestinations.DEVICE_INFO_ROUTE) },
+                onNavigateToAppUpdates = { navController.navigate(AppDestinations.APP_UPDATES_ROUTE) }
             )
         }
 
@@ -84,6 +87,12 @@ fun AppNavigation(
 
         composable(AppDestinations.DEVICE_INFO_ROUTE) {
             DeviceInfoScreen(
+                onNavigateUp = { navController.navigateUp() }
+            )
+        }
+
+        composable(AppDestinations.APP_UPDATES_ROUTE) {
+            AppUpdatesScreen(
                 onNavigateUp = { navController.navigateUp() }
             )
         }

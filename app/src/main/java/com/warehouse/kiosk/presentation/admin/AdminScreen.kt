@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,7 +45,8 @@ fun AdminScreen(
     onNavigateToKioskSettings: () -> Unit,
     onNavigateToAutoStart: () -> Unit,
     onNavigateToWmsInstall: () -> Unit,
-    onNavigateToDeviceInfo: () -> Unit
+    onNavigateToDeviceInfo: () -> Unit,
+    onNavigateToAppUpdates: () -> Unit
 ) {
     val context = LocalContext.current
     val isKioskModeActive by viewModel.isKioskModeActive.collectAsStateWithLifecycle()
@@ -118,6 +120,14 @@ fun AdminScreen(
                     subtitle = "Download and install WMS application",
                     icon = Icons.Default.Download,
                     onClick = onNavigateToWmsInstall
+                )
+            }
+            item {
+                SettingsItem(
+                    title = "App Updates",
+                    subtitle = "Check for and install app updates",
+                    icon = Icons.Default.SystemUpdate,
+                    onClick = onNavigateToAppUpdates
                 )
             }
         }

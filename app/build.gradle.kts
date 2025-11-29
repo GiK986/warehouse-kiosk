@@ -67,6 +67,7 @@ android {
     // The kotlinOptions block is removed as it's deprecated
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
