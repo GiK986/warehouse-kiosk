@@ -283,7 +283,7 @@ class QRGenerator:
             print(f"🌐 APK URL: {apk_url}")
 
         # добавя location_wifi за локацията ако е зададено
-        location_wifi = None
+        location_wifi = ""
         location_wifi_id = location.get("location_wifi", None)
         if location_wifi_id:
             if location_wifi_id not in self.wifi_profiles["profiles"]:
