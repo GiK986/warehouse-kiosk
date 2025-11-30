@@ -15,6 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -239,10 +241,12 @@ class ProvisioningCompleteActivity : ComponentActivity() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Top
             ) {
+                Spacer(modifier = Modifier.height(24.dp))
                 // Success header
                 Text(
                     text = "✓",
@@ -299,9 +303,6 @@ class ProvisioningCompleteActivity : ComponentActivity() {
                 Spacer(modifier = Modifier.height(32.dp))
 
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Manual continue button
                 Button(
                     onClick = onContinue,
                     modifier = Modifier.fillMaxWidth()
