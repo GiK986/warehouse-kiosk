@@ -1,6 +1,7 @@
 package com.warehouse.kiosk.domain.usecase
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.util.Log
 import com.warehouse.kiosk.data.repository.ApkRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -63,14 +64,27 @@ class DownloadAndInstallApkUseCase @Inject constructor(
             )
 
             Log.i(TAG, "APK downloaded successfully: ${apkFile.absolutePath}")
+
+            // Извличаме package name от APK файла преди инсталиране
+            val packageName = try {
+                val packageInfo = context.packageManager.getPackageArchiveInfo(
+                    apkFile.absolutePath,
+                    PackageManager.GET_ACTIVITIES
+                )
+                packageInfo?.packageName
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to extract package name from APK", e)
+                null
+            }
+
             emit(InstallState.Installing)
 
             // Install APK (silent install чрез Device Owner)
             val success = apkRepository.installApk(apkFile)
 
             if (success) {
-                Log.i(TAG, "APK installed successfully")
-                emit(InstallState.Success)
+                Log.i(TAG, "APK installed successfully. Package: $packageName")
+                emit(InstallState.Success(packageName))
             } else {
                 Log.e(TAG, "APK installation failed")
                 emit(InstallState.Error("Инсталацията се провали"))
@@ -91,7 +105,7 @@ class DownloadAndInstallApkUseCase @Inject constructor(
     sealed class InstallState {
         data class Downloading(val progress: Int) : InstallState()
         data object Installing : InstallState()
-        data object Success : InstallState()
+        data class Success(val packageName: String?) : InstallState()
         data class Error(val message: String) : InstallState()
     }
 }

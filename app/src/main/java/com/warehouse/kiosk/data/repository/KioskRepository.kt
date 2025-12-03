@@ -3,6 +3,7 @@ package com.warehouse.kiosk.data.repository
 import com.warehouse.kiosk.data.database.AppDao
 import com.warehouse.kiosk.data.database.AppEntity
 import com.warehouse.kiosk.data.preferences.KioskPreferences
+import com.warehouse.kiosk.domain.model.SavedApkUrl
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -48,4 +49,16 @@ class KioskRepository @Inject constructor(
     val locationName: Flow<String> = preferences.locationName
 
     suspend fun setLocationName(location: String) = preferences.setLocationName(location)
+
+    // -- Saved APK URLs --
+
+    val isSaveUrlEnabled: Flow<Boolean> = preferences.isSaveUrlEnabled
+
+    suspend fun setSaveUrlEnabled(enabled: Boolean) = preferences.setSaveUrlEnabled(enabled)
+
+    val savedApkUrls: Flow<List<SavedApkUrl>> = preferences.savedApkUrls
+
+    suspend fun addSavedApkUrl(savedUrl: SavedApkUrl) = preferences.addSavedApkUrl(savedUrl)
+
+    suspend fun removeSavedApkUrl(packageName: String) = preferences.removeSavedApkUrl(packageName)
 }

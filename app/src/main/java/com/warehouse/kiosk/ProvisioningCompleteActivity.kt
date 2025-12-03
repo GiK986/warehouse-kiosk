@@ -10,10 +10,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.warehouse.kiosk.data.repository.ApkRepository
 import com.warehouse.kiosk.data.repository.KioskRepository
+import com.warehouse.kiosk.domain.model.SavedApkUrl
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -162,6 +164,18 @@ class ProvisioningCompleteActivity : ComponentActivity() {
                     // Download
                     val apkFile = apkRepository.downloadApk(wmsApkUrl)
 
+                    // Извличаме package name от APK файла преди инсталиране
+                    val packageName = try {
+                        val packageInfo = packageManager.getPackageArchiveInfo(
+                            apkFile.absolutePath,
+                            PackageManager.GET_ACTIVITIES
+                        )
+                        packageInfo?.packageName
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to extract package name from APK", e)
+                        null
+                    }
+
                     withContext(Dispatchers.Main) {
                         wmsInstallStep.value = ProvisioningStep(
                             name = "WMS приложение",
@@ -176,6 +190,23 @@ class ProvisioningCompleteActivity : ComponentActivity() {
 
                     // Cleanup
                     apkRepository.cleanupApkFile(apkFile)
+
+                    // При успешна инсталация, автоматично запази URL-а
+                    if (success && packageName != null) {
+                        try {
+                            val displayName = packageName.substringAfterLast('.')
+                            kioskRepository.addSavedApkUrl(
+                                SavedApkUrl(
+                                    url = wmsApkUrl,
+                                    packageName = packageName,
+                                    displayName = displayName
+                                )
+                            )
+                            Log.i(TAG, "WMS APK URL saved for future use: $packageName")
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Failed to save WMS APK URL", e)
+                        }
+                    }
 
                     withContext(Dispatchers.Main) {
                         wmsInstallStep.value = if (success) {
