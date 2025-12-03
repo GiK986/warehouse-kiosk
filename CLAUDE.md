@@ -2,6 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Workflow Requirements
+- Update CLAUDE.md before every git commit
+
 ## Project Overview
 
 Android Kiosk application designed to run as a Device Owner on Android devices, providing a locked-down launcher environment for warehouse operations. The app supports QR code provisioning and manages device policies for kiosk mode.
@@ -92,10 +95,12 @@ presentation/     - Jetpack Compose UI and ViewModels
   ├── kiosk_settings/  - Kiosk mode on/off
   ├── auto_start/      - Configure app auto-launch
   ├── password/        - Admin password dialog
+  ├── wms_install/     - WMS app installation with saved URLs
   └── navigation/      - NavHost and routes
 
 domain/           - Business logic and use cases
-  └── usecase/         - GetInstalledAppsUseCase
+  ├── model/           - Data models (SavedApkUrl)
+  └── usecase/         - Use cases (GetInstalledAppsUseCase, RefreshInstalledAppsUseCase, DownloadAndInstallApkUseCase)
 
 data/             - Data layer
   ├── repository/      - KioskRepository (single source of truth)
@@ -151,9 +156,31 @@ The app monitors `KioskRepository.isKioskModeActive` and `getEnabledApps()` to d
 
 **Repository Pattern**: `KioskRepository` provides a single source of truth, combining:
 - Room database for app enable/disable state
-- DataStore for preferences (kiosk mode, password, auto-start)
+- DataStore for preferences (kiosk mode, password, auto-start, saved APK URLs)
 
 **ViewModels**: Each screen has a ViewModel that observes repository flows and exposes UI state.
+
+### WMS App Installation Feature
+
+The app supports downloading and installing WMS applications via URL with the following features:
+
+**Saved URLs System:**
+- Users can save APK URLs for later reuse via toggle switch
+- Saved URLs are stored in DataStore with package name and display name
+- URLs from QR code provisioning (`wms_apk_url`) are automatically saved after successful installation
+- List of saved URLs displayed as cards with click-to-load and delete functionality
+
+**Installation Flow:**
+1. Enter APK URL (or select from saved URLs)
+2. Optional: Enable "Save URL" toggle
+3. Download APK with progress tracking
+4. Extract package name from APK file
+5. Silent installation using Device Owner permissions
+6. Auto-refresh app list (adds only NEW apps, preserves enabled state)
+7. Auto-clear URL field
+8. Auto-save URL if toggle enabled
+
+**Important:** `RefreshInstalledAppsUseCase` only adds NEW apps to the database to preserve the `isEnabled` state of existing apps. This prevents resetting previously enabled apps when installing new ones.
 
 ### Security
 
@@ -199,10 +226,31 @@ Device Owner apps need special permissions that are granted during provisioning:
 
 ## Version Information
 
-- **Current Version**: 1.0.6 (versionCode 6)
+- **Current Version**: 1.1.3 (versionCode 13)
 - **Min SDK**: 31 (Android 12)
 - **Target SDK**: 34 (Android 14)
 - **Compile SDK**: 36
+
+### Recent Changes
+
+**v1.1.3** (Current)
+- Fixed: App enabled state preserved when refreshing installed apps list
+- RefreshInstalledAppsUseCase now only adds NEW apps
+
+**v1.1.2**
+- Added saved URLs feature for WMS app installation
+- Toggle to save APK URLs for later reuse
+- Display list of saved URLs with package names
+- Auto-save URLs from QR code provisioning
+- Auto-refresh app list after successful installation
+- Improved success message UI
+
+**v1.1.1**
+- Made provisioning screen scrollable to show Continue button
+
+**v1.1.0**
+- Added app update checking and installation feature
+- Auto-save location name from provisioning QR code
 
 ## Technology Stack
 
