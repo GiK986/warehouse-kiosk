@@ -1,6 +1,6 @@
 #!/bin/bash
 
-adb install -r app/build/outputs/apk/debug/warehouse-kiosk-release.apk
+adb install -r app/build/outputs/apk/release/warehouse-kiosk-release.apk
 
 adb shell dpm set-device-owner com.warehouse.kiosk/.services.DeviceOwnerReceiver
 
