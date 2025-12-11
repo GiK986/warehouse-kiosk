@@ -3,7 +3,6 @@ package com.warehouse.kiosk.domain.usecase
 import android.app.WallpaperManager
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Matrix
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.util.DisplayMetrics
@@ -139,25 +138,27 @@ class SetWallpaperUseCase @Inject constructor(
         val scaledWidth = (sourceWidth * scale).toInt()
         val scaledHeight = (sourceHeight * scale).toInt()
 
-        // Изчисляваме offset за центриране
-        val left = (scaledWidth - targetWidth) / 2
-        val top = (scaledHeight - targetHeight) / 2
+        // Scale-ваме bitmap-а първо
+        val scaledBitmap = Bitmap.createScaledBitmap(source, scaledWidth, scaledHeight, true)
 
-        // Създаваме matrix за scaling и cropping
-        val matrix = Matrix().apply {
-            postScale(scale, scale)
-            postTranslate(-left.toFloat(), -top.toFloat())
+        // Изчисляваме координатите за crop от центъра
+        val xOffset = (scaledWidth - targetWidth) / 2
+        val yOffset = (scaledHeight - targetHeight) / 2
+
+        // Crop-ваме центъра
+        val croppedBitmap = Bitmap.createBitmap(
+            scaledBitmap,
+            xOffset,
+            yOffset,
+            targetWidth,
+            targetHeight
+        )
+
+        // Cleanup scaled bitmap ако не е същият като cropped
+        if (scaledBitmap != croppedBitmap) {
+            scaledBitmap.recycle()
         }
 
-        // Създаваме нов bitmap с точните размери на екрана
-        return Bitmap.createBitmap(
-            source,
-            0,
-            0,
-            sourceWidth,
-            sourceHeight,
-            matrix,
-            true // filter за по-добро качество при scaling
-        )
+        return croppedBitmap
     }
 }
