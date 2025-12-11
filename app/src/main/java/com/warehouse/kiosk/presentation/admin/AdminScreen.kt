@@ -20,13 +20,17 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -51,6 +55,24 @@ fun AdminScreen(
     val context = LocalContext.current
     val isKioskModeActive by viewModel.isKioskModeActive.collectAsStateWithLifecycle()
     val autoStartAppName by viewModel.autoStartAppName.collectAsStateWithLifecycle()
+    val wallpaperState by viewModel.wallpaperState.collectAsStateWithLifecycle()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Наблюдаваме wallpaperState и показваме Snackbar при промени
+    LaunchedEffect(wallpaperState) {
+        when (val state = wallpaperState) {
+            is WallpaperState.Success -> {
+                snackbarHostState.showSnackbar("Тапетът е зададен успешно")
+                viewModel.resetWallpaperState()
+            }
+            is WallpaperState.Error -> {
+                snackbarHostState.showSnackbar("Грешка: ${state.message}")
+                viewModel.resetWallpaperState()
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -62,6 +84,9 @@ fun AdminScreen(
                     }
                 }
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         }
     ) {
         LazyColumn(
@@ -128,6 +153,14 @@ fun AdminScreen(
                     subtitle = "Check for and install app updates",
                     icon = Icons.Default.SystemUpdate,
                     onClick = onNavigateToAppUpdates
+                )
+            }
+            item {
+                SettingsItem(
+                    title = "Задай тапет",
+                    subtitle = "Задай wallpaper.jpg като тапет на устройството",
+                    icon = Icons.Default.Wallpaper,
+                    onClick = { viewModel.setWallpaper() }
                 )
             }
         }

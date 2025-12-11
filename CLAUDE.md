@@ -115,7 +115,8 @@ domain/           - Business logic and use cases
   └── usecase/         - Use cases:
       ├── GetInstalledAppsUseCase - Get all launchable apps
       ├── RefreshInstalledAppsUseCase - Add new apps to database
-      └── DownloadAndInstallApkUseCase - Download and install APKs
+      ├── DownloadAndInstallApkUseCase - Download and install APKs
+      └── SetWallpaperUseCase - Set device wallpaper from drawable resource
 
 data/             - Data layer
   ├── model/           - Data transfer objects
@@ -227,6 +228,30 @@ The app supports downloading and installing WMS applications via URL with the fo
 - Package name extraction happens before installation for accurate tracking
 - Success state includes package name for confirmation and saving
 
+### Wallpaper Feature
+
+The app can set `wallpaper.jpg` from drawable resources as the device wallpaper for both Home Screen and Lock Screen.
+
+**Current Implementation:**
+- Admin panel button "Задай тапет" for manual wallpaper setting
+- Uses `SetWallpaperUseCase` to load and apply the wallpaper
+- Sets both Home Screen (`FLAG_SYSTEM`) and Lock Screen (`FLAG_LOCK`) wallpapers
+- Snackbar feedback on success or error
+- No additional permissions needed (Device Owner automatically grants `SET_WALLPAPER`)
+
+**How it works:**
+1. User clicks "Задай тапет" button in Admin screen
+2. `SetWallpaperUseCase` loads `R.drawable.wallpaper`
+3. Converts drawable to Bitmap
+4. Applies to Home Screen via `WallpaperManager.setBitmap()`
+5. Applies to Lock Screen (API 24+)
+6. Shows success/error Snackbar message
+
+**Future enhancements:**
+- Automatic wallpaper setting during QR provisioning
+- Custom wallpaper upload via Admin panel
+- Wallpaper selection from multiple presets
+
 ### Security
 
 - Admin password is hashed using `MessageDigest` (SHA-256)
@@ -264,6 +289,7 @@ AdminScreen (Hub)
     ├── Auto-Start (Select default app)
     ├── WMS Install (Download/Install apps)
     ├── App Updates (Check for updates)
+    ├── Set Wallpaper (Set device wallpaper)
     └── Device Info (System information)
 ```
 
