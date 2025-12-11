@@ -324,14 +324,23 @@ Device Owner apps receive special permissions during provisioning:
 
 ## Version Information
 
-- **Current Version**: 1.1.3 (versionCode 13)
+- **Current Version**: 1.2.0 (versionCode 14)
 - **Min SDK**: 31 (Android 12)
 - **Target SDK**: 34 (Android 14)
 - **Compile SDK**: 36
 
 ### Recent Changes
 
-**v1.1.3** (2025-12-03) - Current
+**v1.2.0** (2025-12-12) - Current
+- ✨ New Feature: Device wallpaper setting functionality
+- Admin panel button "Задай тапет" for manual wallpaper configuration
+- Automatic wallpaper setting during QR code provisioning
+- Center crop scaling to fit wallpaper on any screen size
+- Sets wallpaper for both Home Screen and Lock Screen
+- Added SET_WALLPAPER permission to AndroidManifest
+- Comprehensive documentation in design doc and CLAUDE.md
+
+**v1.1.3** (2025-12-03)
 - 🐛 Fixed: App enabled state preserved when refreshing installed apps list
 - RefreshInstalledAppsUseCase now only adds NEW apps to prevent resetting enabled states
 
