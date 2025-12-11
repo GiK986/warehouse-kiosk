@@ -70,6 +70,9 @@ class ProvisioningCompleteActivity : ComponentActivity() {
     @Inject
     lateinit var kioskRepository: KioskRepository
 
+    @Inject
+    lateinit var setWallpaperUseCase: com.warehouse.kiosk.domain.usecase.SetWallpaperUseCase
+
     // Data classes за резултатите
     data class ProvisioningStep(
         val name: String,
@@ -142,7 +145,10 @@ class ProvisioningCompleteActivity : ComponentActivity() {
         val locationName = extras?.getString("location_name")
         steps.add(saveLocationName(locationName))
 
-        // 4. Save provisioning status
+        // 4. Set device wallpaper
+        steps.add(setDeviceWallpaper())
+
+        // 5. Save provisioning status
         steps.add(saveProvisioningStatusWithResult())
 
         // 4. WMS APK install (async в background)
@@ -595,6 +601,47 @@ class ProvisioningCompleteActivity : ComponentActivity() {
                 status = StepStatus.WARNING,
                 message = "Грешка при запазване",
                 icon = Icons.Default.LocationOn
+            )
+        }
+    }
+
+    /**
+     * Задаване на device wallpaper от drawable ресурсите.
+     */
+    private fun setDeviceWallpaper(): ProvisioningStep {
+        return try {
+            // Задаваме wallpaper синхронно (блокира малко, но е бързо)
+            val result = kotlinx.coroutines.runBlocking {
+                setWallpaperUseCase()
+            }
+
+            result.fold(
+                onSuccess = {
+                    Log.i(TAG, "Device wallpaper set successfully")
+                    ProvisioningStep(
+                        name = "Тапет",
+                        status = StepStatus.SUCCESS,
+                        message = "Зададен успешно",
+                        icon = Icons.Default.Wallpaper
+                    )
+                },
+                onFailure = { error ->
+                    Log.e(TAG, "Failed to set wallpaper", error)
+                    ProvisioningStep(
+                        name = "Тапет",
+                        status = StepStatus.WARNING,
+                        message = error.message ?: "Грешка",
+                        icon = Icons.Default.Wallpaper
+                    )
+                }
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting wallpaper", e)
+            ProvisioningStep(
+                name = "Тапет",
+                status = StepStatus.FAILED,
+                message = e.message ?: "Грешка при настройка",
+                icon = Icons.Default.Wallpaper
             )
         }
     }

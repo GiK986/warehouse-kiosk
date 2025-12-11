@@ -240,15 +240,18 @@ The app can set `wallpaper.jpg` from drawable resources as the device wallpaper 
 - Requires `SET_WALLPAPER` permission (declared in AndroidManifest.xml)
 
 **How it works:**
-1. User clicks "Задай тапет" button in Admin screen
-2. `SetWallpaperUseCase` loads `R.drawable.wallpaper`
-3. Converts drawable to Bitmap
-4. Applies to Home Screen via `WallpaperManager.setBitmap()`
-5. Applies to Lock Screen (API 24+)
-6. Shows success/error Snackbar message
+1. **Manual (Admin panel)**: User clicks "Задай тапет" button → Shows Snackbar feedback
+2. **Automatic (Provisioning)**: Automatically set during QR code provisioning → Shows as "Тапет" step in provisioning screen
+3. `SetWallpaperUseCase` loads `R.drawable.wallpaper` → Converts to Bitmap
+4. Applies to Home Screen via `WallpaperManager.setBitmap()` with `FLAG_SYSTEM`
+5. Applies to Lock Screen (API 24+) with `FLAG_LOCK`
+
+**Provisioning Integration:**
+- Wallpaper is automatically set during QR code provisioning (no additional QR fields needed)
+- Executed as step 4 in `ProvisioningCompleteActivity` (after location save, before provisioning status)
+- Displayed in provisioning success screen with status indicator
 
 **Future enhancements:**
-- Automatic wallpaper setting during QR provisioning
 - Custom wallpaper upload via Admin panel
 - Wallpaper selection from multiple presets
 
