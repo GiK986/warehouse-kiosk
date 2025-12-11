@@ -243,8 +243,13 @@ The app can set `wallpaper.jpg` from drawable resources as the device wallpaper 
 1. **Manual (Admin panel)**: User clicks "Задай тапет" button → Shows Snackbar feedback
 2. **Automatic (Provisioning)**: Automatically set during QR code provisioning → Shows as "Тапет" step in provisioning screen
 3. `SetWallpaperUseCase` loads `R.drawable.wallpaper` → Converts to Bitmap
-4. Applies to Home Screen via `WallpaperManager.setBitmap()` with `FLAG_SYSTEM`
-5. Applies to Lock Screen (API 24+) with `FLAG_LOCK`
+4. **Center Crop Scaling**: Automatically scales wallpaper to fit screen size
+   - Gets screen dimensions via WindowManager
+   - Calculates scale factor to cover entire screen (preserving aspect ratio)
+   - Crops excess parts to center the image
+   - Works on all screen sizes and orientations
+5. Applies to Home Screen via `WallpaperManager.setBitmap()` with `FLAG_SYSTEM`
+6. Applies to Lock Screen (API 24+) with `FLAG_LOCK`
 
 **Provisioning Integration:**
 - Wallpaper is automatically set during QR code provisioning (no additional QR fields needed)
