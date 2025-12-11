@@ -32,6 +32,9 @@
     <!-- INTERNET PERMISSION за download на APK файлове -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- WALLPAPER PERMISSION за задаване на тапет -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+
     <application
         android:name=".KioskApplication"
         android:allowBackup="true"

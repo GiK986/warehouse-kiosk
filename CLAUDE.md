@@ -237,7 +237,7 @@ The app can set `wallpaper.jpg` from drawable resources as the device wallpaper 
 - Uses `SetWallpaperUseCase` to load and apply the wallpaper
 - Sets both Home Screen (`FLAG_SYSTEM`) and Lock Screen (`FLAG_LOCK`) wallpapers
 - Snackbar feedback on success or error
-- No additional permissions needed (Device Owner automatically grants `SET_WALLPAPER`)
+- Requires `SET_WALLPAPER` permission (declared in AndroidManifest.xml)
 
 **How it works:**
 1. User clicks "Задай тапет" button in Admin screen
@@ -304,6 +304,7 @@ AdminScreen (Hub)
   - `QUERY_ALL_PACKAGES` - List all installed apps
   - `DISABLE_KEYGUARD` - Disable lock screen in kiosk mode
   - `INTERNET` - Download APKs
+  - `SET_WALLPAPER` - Set device wallpaper
   - `SYSTEM_ALERT_WINDOW` - Overlay service
 
 ### Required Permissions for Device Owner
