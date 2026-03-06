@@ -25,6 +25,9 @@ interface AppDao {
     @Query("SELECT * FROM kiosk_apps WHERE package_name = :packageName LIMIT 1")
     suspend fun getAppByPackageName(packageName: String): AppEntity?
 
+    @Query("DELETE FROM kiosk_apps WHERE package_name IN (:packageNames)")
+    suspend fun deleteByPackageNames(packageNames: List<String>)
+
     @Query("DELETE FROM kiosk_apps")
     suspend fun clearAll()
 }

@@ -24,6 +24,8 @@ class KioskRepository @Inject constructor(
 
     suspend fun insertAllApps(apps: List<AppEntity>) = appDao.insertAll(apps)
 
+    suspend fun deleteAppsByPackageNames(packageNames: List<String>) = appDao.deleteByPackageNames(packageNames)
+
     // -- Preferences Data --
 
     val isKioskModeActive: Flow<Boolean> = preferences.isKioskModeActive

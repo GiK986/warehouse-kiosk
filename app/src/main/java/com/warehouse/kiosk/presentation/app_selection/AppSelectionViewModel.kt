@@ -70,8 +70,15 @@ class AppSelectionViewModel @Inject constructor(
             dbApps.none { dbApp -> dbApp.packageName == sysApp.packageName }
         }
 
+        val removedPackageNames = dbApps
+            .filter { dbApp -> systemApps.none { sysApp -> sysApp.packageName == dbApp.packageName } }
+            .map { it.packageName }
+
         if (newApps.isNotEmpty()) {
             repository.insertAllApps(newApps)
+        }
+        if (removedPackageNames.isNotEmpty()) {
+            repository.deleteAppsByPackageNames(removedPackageNames)
         }
         // After refresh, the list in the DB is the new original state
         originalAppList = repository.getAllApps().first()
