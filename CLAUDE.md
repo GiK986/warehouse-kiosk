@@ -324,14 +324,20 @@ Device Owner apps receive special permissions during provisioning:
 
 ## Version Information
 
-- **Current Version**: 1.2.0 (versionCode 14)
+- **Current Version**: 1.2.1 (versionCode 15)
 - **Min SDK**: 31 (Android 12)
 - **Target SDK**: 34 (Android 14)
 - **Compile SDK**: 36
 
 ### Recent Changes
 
-**v1.2.0** (2025-12-12) - Current
+**v1.2.1** (2026-03-07) - Current
+- ♻️ Refactor: Auto-refresh app list when AppSelection screen opens
+- Removed redundant state updates from refreshAppList() (Room Flow handles them)
+- Fixed misleading comment about _hasUnsavedChanges reset
+- Upgraded Gradle 8.13 → 9.3.1, AGP 8.13.2 → 9.1.0, KSP → 2.3.2
+
+**v1.2.0** (2025-12-12)
 - ✨ New Feature: Device wallpaper setting functionality
 - Admin panel button "Задай тапет" for manual wallpaper configuration
 - Automatic wallpaper setting during QR code provisioning
