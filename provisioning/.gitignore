@@ -5,6 +5,7 @@ configs/
 # Конфигурации с чувствителни данни (опционално - uncommment ако имаш production secrets)
 # wifi_profiles.json
 # locations.json
+HsmScaner.apk
 
 # Python
 __pycache__/
