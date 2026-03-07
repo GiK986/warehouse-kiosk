@@ -36,9 +36,11 @@ class AppSelectionViewModel @Inject constructor(
                     originalAppList = apps
                 }
                 _appListState.value = apps
-                _hasUnsavedChanges.value = false // Reset on initial load
+                _hasUnsavedChanges.value = false
             }
             .launchIn(viewModelScope)
+
+        viewModelScope.launch { refreshAppList() }
     }
 
     fun onAppEnableChanged(app: AppEntity, isEnabled: Boolean) {
@@ -80,9 +82,8 @@ class AppSelectionViewModel @Inject constructor(
         if (removedPackageNames.isNotEmpty()) {
             repository.deleteAppsByPackageNames(removedPackageNames)
         }
-        // After refresh, the list in the DB is the new original state
+        // Update baseline for unsaved-changes detection; _appListState and _hasUnsavedChanges
+        // are handled automatically by the Flow observer when the DB changes.
         originalAppList = repository.getAllApps().first()
-        _appListState.value = originalAppList
-        _hasUnsavedChanges.value = false
     }
 }
