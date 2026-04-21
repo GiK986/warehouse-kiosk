@@ -324,14 +324,24 @@ Device Owner apps receive special permissions during provisioning:
 
 ## Version Information
 
-- **Current Version**: 1.2.1 (versionCode 15)
+- **Current Version**: 1.2.2 (versionCode 16)
 - **Min SDK**: 31 (Android 12)
 - **Target SDK**: 34 (Android 14)
 - **Compile SDK**: 36
 
 ### Recent Changes
 
-**v1.2.1** (2026-03-07) - Current
+**v1.2.2** (2026-04-21) - Current
+- 🔧 Fix deprecated AGP 9 build flags in gradle.properties
+- ⬆️ Upgraded Hilt 2.57.2 → 2.59 (AGP 9 native support, no BaseExtension)
+- ⬆️ Upgraded Gradle 9.3.1 → 9.4.1
+- Removed `org.jetbrains.kotlin.android` plugin (built-in since AGP 9)
+- Removed `versionCode`/`versionName` from AndroidManifest (now only in build.gradle.kts)
+- 🔧 Fix APK rename — migrated from deprecated `applicationVariants` to `tasks.matching`
+- ✨ QR код генератор: добавено заглавие с името на локацията над QR изображението
+- 🔧 Fix: Клавиатурен тип за admin парола сменен на NumberPassword
+
+**v1.2.1** (2026-03-07)
 - ♻️ Refactor: Auto-refresh app list when AppSelection screen opens
 - Removed redundant state updates from refreshAppList() (Room Flow handles them)
 - Fixed misleading comment about _hasUnsavedChanges reset
@@ -373,10 +383,10 @@ Device Owner apps receive special permissions during provisioning:
 
 - **Language**: Kotlin 2.2.21
 - **UI**: Jetpack Compose (BOM 2025.10.01)
-- **DI**: Hilt 2.57.2
+- **DI**: Hilt 2.59
 - **Database**: Room with KSP
 - **Async**: Kotlin Coroutines + Flow
-- **Build**: Gradle 8.13.1 with Kotlin DSL
+- **Build**: Gradle 9.4.1 with Kotlin DSL
 - **Serialization**: Kotlinx Serialization (for SavedApkUrl storage)
 
 ## Common Development Tasks

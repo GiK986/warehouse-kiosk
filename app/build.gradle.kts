@@ -1,7 +1,6 @@
 import java.util.Properties
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlin.plugin.serialization")
@@ -29,8 +28,8 @@ android {
         applicationId = "com.warehouse.kiosk"
         minSdk = 31
         targetSdk = 34
-        versionCode = 15
-        versionName = "1.2.1"
+        versionCode = 16
+        versionName = "1.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -75,10 +74,14 @@ android {
         }
     }
     
-    applicationVariants.all {
-        outputs.all {
-            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = "warehouse-kiosk-release.apk"
-        }
+}
+
+tasks.matching { it.name == "packageRelease" }.configureEach {
+    doLast {
+        val outputDir = layout.buildDirectory.dir("outputs/apk/release").get().asFile
+        outputDir.listFiles { _, name -> name.endsWith(".apk") && name != "warehouse-kiosk-release.apk" }
+            ?.firstOrNull()
+            ?.renameTo(File(outputDir, "warehouse-kiosk-release.apk"))
     }
 }
 
