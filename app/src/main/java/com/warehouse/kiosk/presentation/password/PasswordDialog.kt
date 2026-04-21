@@ -153,7 +153,7 @@ private fun PasswordDialogContent(
                         enabled = !isClosing,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
+                            keyboardType = KeyboardType.NumberPassword,
                             imeAction = ImeAction.Go
                         ),
                         keyboardActions = KeyboardActions(
