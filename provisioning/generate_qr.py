@@ -324,8 +324,60 @@ class QRGenerator:
         qr.add_data(json_string)
         qr.make(fit=True)
 
-        img = qr.make_image(fill_color="black", back_color="white")
-        img.save(output_path)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+
+        # Добавя заглавие над QR кода
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+
+            title = location["name"]
+            qr_width, qr_height = qr_img.size
+            padding = 20
+            font_size = max(24, qr_width // 12)
+
+            # Зарежда шрифт
+            font = None
+            font_paths = [
+                "/System/Library/Fonts/Helvetica.ttc",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            ]
+            for fp in font_paths:
+                if Path(fp).exists():
+                    try:
+                        font = ImageFont.truetype(fp, font_size)
+                        break
+                    except Exception:
+                        pass
+            if font is None:
+                font = ImageFont.load_default()
+
+            # Измерва размера на текста
+            dummy = Image.new("RGB", (1, 1))
+            draw_dummy = ImageDraw.Draw(dummy)
+            bbox = draw_dummy.textbbox((0, 0), title, font=font)
+            text_w = bbox[2] - bbox[0]
+            text_h = bbox[3] - bbox[1]
+            title_block_h = text_h + padding * 2
+
+            # Нова снимка: заглавие отгоре + QR код отдолу
+            total_width = max(qr_width, text_w + padding * 2)
+            total_height = title_block_h + qr_height
+            final_img = Image.new("RGB", (total_width, total_height), "white")
+
+            draw = ImageDraw.Draw(final_img)
+            text_x = (total_width - text_w) // 2
+            text_y = padding
+            draw.text((text_x, text_y), title, fill="black", font=font)
+
+            qr_x = (total_width - qr_width) // 2
+            final_img.paste(qr_img.convert("RGB"), (qr_x, title_block_h))
+            final_img.save(output_path)
+            img = final_img
+        except Exception as e:
+            print(f"⚠️  Не може да се добави заглавие: {e}")
+            qr_img.save(output_path)
+            img = qr_img
 
         # Информация за размера
         width, height = img.size
